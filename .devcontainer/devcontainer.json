@@ -30,12 +30,12 @@
 				"workbench.colorTheme": "Default Dark Modern"
 			}
 		}
-	}
+	},
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
 
 	// Runs after the container is created.
-	// TODO(bliutech): configure recommended Git config
-	// "onCreateCommand": ""
+	// Configure recommended Git config. Waiting until post start to allow copying of local .gitconfig if exists.
+	"postStartCommand": "git config --global pull.rebase true && git config --global push.autoSetupRemote true"
 }
