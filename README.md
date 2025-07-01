@@ -8,8 +8,8 @@ The following members contributed to this project as part of GSET 2025.
 
 - Carter Chew
 - Aarav Parikh
-- Project Member 3
 - Shayan Chatiwala
+- Aiden Chen
 - Project Member 5
 - Anusha Iyer (RTA)
 - Benson Liu (Project Mentor)
