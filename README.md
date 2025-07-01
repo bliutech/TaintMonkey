@@ -6,7 +6,7 @@ Dynamic taint analysis of Python web applications using monkey patching.
 
 The following members contributed to this project as part of GSET 2025.
 
-- Project Member 1
+- Aiden Chen (Project Member)
 - Project Member 2
 - Project Member 3
 - Project Member 4
