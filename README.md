@@ -11,5 +11,5 @@ The following members contributed to this project as part of GSET 2025.
 - Project Member 3
 - Project Member 4
 - Project Member 5
-- Anusha Iyer (research coordinator)
-- Benson Liu (project mentor)
+- Anusha Iyer (RTA)
+- Benson Liu (Project Mentor)
