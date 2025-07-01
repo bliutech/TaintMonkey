@@ -9,7 +9,7 @@ The following members contributed to this project as part of GSET 2025.
 - Project Member 1
 - Project Member 2
 - Project Member 3
-- Project Member 4
+- Shayan Chatiwala
 - Project Member 5
 - Anusha Iyer (RTA)
 - Benson Liu (Project Mentor)
