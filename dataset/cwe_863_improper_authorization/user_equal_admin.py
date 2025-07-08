@@ -35,10 +35,14 @@ def login():
         </form>
     '''
 
+def is_user_in_session(user_string, this_session):
+    return user_string in this_session
+
+@app.get("/logout")
 
 @app.route("/insecure/admin/delete_user")
 def insecure_delete_user():
-    if "username" not in session:
+    if not is_user_in_session("username", session):
         return redirect("/login")
 
     user_to_delete = request.args.get("user")
@@ -46,17 +50,19 @@ def insecure_delete_user():
     return f"User {user_to_delete} deleted (pretend)"
 
 #Checks to see if a user is authorized as an admin
-def is_admin(this_session):
-    return "role" in this_session and this_session.get("role") == "admin"
+def is_admin(this_session, role_string, admin_string):
+    return role_string in this_session and this_session.get(role_string) == admin_string
 
 @app.route("/secure/admin/delete_user")
 def secure_delete_user():
     #Here we check to make sure that the logged-in user is admin
-    if is_admin(session):
-        user_to_delete = request.args.get("user")
-        return f"User {user_to_delete} deleted (pretend)"
+    if not is_admin(session, "role", "admin"):
+        return redirect("/login")
 
-    return redirect("/login")
+    user_to_delete = request.args.get("user")
+    if not user_to_delete:
+        return f"No user provided to delete"
+    return f"User {user_to_delete} deleted (pretend)"
 
 
 @app.route("/logout")
