@@ -1,8 +1,9 @@
 from flask import Flask, request
 from sqlalchemy import text
-from db import db
+from db import db, init_db
 
 app = Flask(__name__)
+init_db(app)  # Initialize the database with this Flask app
 
 @app.route('/insecure-login', methods=['POST'])
 def login():
@@ -30,3 +31,6 @@ def secure_login():
     if user:
         return "Secure login successful"
     return "Invalid credentials", 400
+
+if __name__ == "__main__":
+    app.run(debug=True, host='0.0.0.0', port=5000)
