@@ -12,6 +12,9 @@ def login():
 
     if "'" in username:
         return "Invalid username: single quote not allowed", 400
+    
+    if not request.args.get('username') or not request.args.get('password'):
+        return "Username and password are required", 400
 
     query = text(f"SELECT * FROM user WHERE username = '{username}' AND password = '{password}'")
     user = db.session.execute(query).fetchone()
