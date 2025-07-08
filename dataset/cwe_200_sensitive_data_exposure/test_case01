@@ -1,0 +1,56 @@
+from flask import Flask, request
+import re
+
+app = Flask(__name__)
+
+#Insecure path to access sensitive data
+@app.get("/insecure")
+def insecure_handler() -> type[str] | str | None | tuple[str, int]:
+    file = request.args.get("file") or "default.txt"
+    try:
+        return open(file,"r").read()
+        #Opens the file specified in the query
+    except Exception as error:
+        return str(error),400
+
+#ChatGPT used to create isitsecure fuction
+# "edit the is_safe_path function so that a person cannot access the .env, config.py, 
+# or settings.py files" prompt. ChatGPT, May 2024 version, OpenAI, 08 July 2025, 
+# chat.openai.com
+
+def isitsecure(file) ->bool:
+    if ".." in file or file.startswith(("/", "\\")):
+        return False
+
+    forbidden_files = {"config.py", ".env", "settings.py"}
+    if file.lower() in forbidden_files:
+        return False
+
+    return re.match(r"^[a-zA-Z0-9_.-]+$", file) is not None
+
+#Secure path that blocks access to sensitive data
+@app.get("/secure")
+def secure_handler() -> None | str | tuple[str, int]:
+    file = request.args.get("file") or "default.txt"
+    if (isitsecure(file)):
+        #Checks if the file path is secure (does it contain certain characters that would open files or inject code)
+        try:
+            open(file, "r")
+            return open (file,"r").read()
+        except Exception as error:
+            return str(error), 404
+    else:
+        #If the file path is not secure, it returns this error message
+        return "Sorry; this is an invalid file path", 400
+
+
+if (__name__ == "__main__"):
+    app.run(host="0.0.0.0", port=8080)
+
+
+#Added testCase01 for cwe_200_sensitive_data_exposure
+#Added config.py to test the vulnerability of testCase01
+#testCase01 exposes sensitive data by allowing access to files based on request without properly validating path
+
+
+
