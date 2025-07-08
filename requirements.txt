@@ -13,3 +13,5 @@ pytest==8.4.1
 pytest-cov==6.2.1
 ruff==0.12.2
 Werkzeug==3.1.3
+SQLAlchemy==2.0.29
+Flask-SQLAlchemy==3.1.0
