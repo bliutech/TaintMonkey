@@ -7,8 +7,8 @@ init_db(app)  # Initialize the database with this Flask app
 
 @app.route('/insecure-login', methods=['POST'])
 def login():
-    username = request.form['username']
-    password = request.form['password']
+    username = request.args['username']
+    password = request.args['password']
 
     if "'" in username:
         return "Invalid username: single quote not allowed", 400
@@ -22,8 +22,8 @@ def login():
 
 @app.route('/secure-login', methods=['POST'])
 def secure_login():
-    username = request.form['username']
-    password = request.form['password']
+    username = request.args['username']
+    password = request.args['password']
 
     query = text("SELECT * FROM user WHERE username = :username AND password = :password")
     user = db.session.execute(query, {"username": username, "password": password}).fetchone()
