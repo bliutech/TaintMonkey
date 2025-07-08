@@ -5,10 +5,14 @@ from flask import Flask, request
 app = Flask(__name__)
 
 
+def open_file_command(file):
+    return "cat {}".format(file)
+
+
 @app.get("/insecure")
 def insecure_handler():
     file = request.args.get("file") or "example.txt"
-    res = os.popen(f"cat {file}").read()
+    res = os.popen(open_file_command(file)).read()
     return res
 
 
@@ -23,7 +27,7 @@ def secure_handler():
     if not is_safe_path(file):
         return "Invalid file path"
 
-    res = os.popen(f"cat {file}").read()
+    res = os.popen(open_file_command(file)).read()
     return res
 
 
