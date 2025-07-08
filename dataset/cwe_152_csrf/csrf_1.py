@@ -10,9 +10,12 @@ from db import *
 
 app = Flask(__name__)
 
-app.secret_key = 'dev'
-
-app.config['DATABASE'] = 'cwe_152_csrf.sqlite'
+app.config.update(
+    DATABASE = 'cwe_152_csrf.sqlite',
+    SECRET_KEY = 'dev',
+    SESSION_COOKIE_SAMESITE=None,
+    SESSION_COOKIE_SECURE=True
+)
 with app.app_context():
     init_db()
 init_app(app)
