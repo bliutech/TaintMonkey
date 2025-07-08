@@ -41,9 +41,8 @@ def insecure_delete_user():
     if "username" not in session:
         return redirect("/login")
 
-    print(session["username"])
     user_to_delete = request.args.get("user")
-    #CWE-285: No check if current user is admin
+    #CWE-863: No check if current user is admin
     return f"User {user_to_delete} deleted (pretend)"
 
 #Checks to see if a user is authorized as an admin
