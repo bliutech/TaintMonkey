@@ -43,7 +43,7 @@ def register():
                 'username': username,
                 'password': generate_password_hash(password)
             }
-            return "User registered", 200
+            return "User registered\n", 200
             
         return f"Error: {error}", 400
     
@@ -72,7 +72,7 @@ def login():
             session.clear()
             session['username'] = username
             csrf_token = generate_csrf()
-            return f"User logged in. CSRF Token: {csrf_token}", 200
+            return f"User logged in. CSRF Token: {csrf_token}\n", 200
         
         return f"Error: {error}", 400
 
@@ -89,8 +89,8 @@ def login_required(view):
     return wrapped_view
 
 @app.route('/insecure-update', methods=('GET', 'PUT'))
-@csrf.exempt
 @login_required
+@csrf.exempt
 def insecure_update():
     if request.method == 'PUT':
         new_password = request.args.get('new_password')
@@ -101,7 +101,7 @@ def insecure_update():
 
         users[g.user['username']]['password'] = generate_password_hash(new_password, method='pbkdf2:sha256')
 
-        return "Password updated", 200
+        return "Password updated\n", 200
     
     return "Send a PUT request to update password with ?new_password=...", 200
 
@@ -117,7 +117,7 @@ def secure_update():
 
         users[g.user['username']]['password'] = generate_password_hash(new_password, method='pbkdf2:sha256')
 
-        return "Password updated (with csrf token)", 200
+        return "Password updated (with csrf token)\n", 200
     
     return "Send a PUT request to update password with ?new_password=...", 200
 
@@ -133,4 +133,4 @@ def logout():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    app.run(host="0.0.0.0", port=8080, debug=False)
