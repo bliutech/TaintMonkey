@@ -1,68 +1,62 @@
-from itsdangerous.signer import NoneAlgorithm
+from flask import jsonify
 import functools
 
 from flask import (
     Flask, flash, g, redirect, request, session, url_for
 )
 from werkzeug.security import check_password_hash, generate_password_hash
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 
-from db import *
-
+users = {}
 app = Flask(__name__)
 
+csrf = CSRFProtect()
+csrf.init_app(app)
+
 app.config.update(
-    DATABASE = 'cwe_152_csrf.sqlite',
     SECRET_KEY = 'dev',
     SESSION_COOKIE_SAMESITE=None,
     SESSION_COOKIE_SECURE=True
 )
-with app.app_context():
-    init_db()
-init_app(app)
 
 @app.route('/')
 def index():
     return "Welcome to this Very Secure Web App!"
 
 @app.route('/register', methods=('GET', 'POST'))
+@csrf.exempt
 def register():
     if request.method == 'POST':
         username = request.args.get("username") or "test_username"
         password = request.args.get("password") or "test_password"
-        db = get_db()
         error = None
 
         if not username:
             error = 'Username is required.'
         elif not password:
             error = 'Password is required'
+        elif username in users:
+            error = f'Username {username} is already registered'
 
         if error is None:
-            try:
-                db.execute(
-                    "INSERT INTO user (username, password) VALUES (?, ?)",
-                    (username, generate_password_hash(password, method='pbkdf2:sha256'))
-                )
-                db.commit()
-            except db.IntegrityError:
-                error = f"User {username} is already registered."
-            else:
-                return "User registered", 200
+            users[username] = {
+                'username': username,
+                'password': generate_password_hash(password)
+            }
+            return "User registered", 200
             
         return f"Error: {error}", 400
     
     return "Send a POST request to register with ?username=...&password=...", 200
 
 @app.route('/login', methods=('GET', 'POST'))
+@csrf.exempt
 def login():
     if request.method == 'POST':
         username = request.args.get('username') or "test_username"
         password = request.args.get('password') or "test_password"
-        db = get_db()
         error = None
-        user = db.execute(
-            'SELECT * FROM user WHERE username = ?', (username,)
-        ).fetchone()
+        user = users.get(username)
 
         if user is None:
             error = 'Incorrect username.'
@@ -76,8 +70,9 @@ def login():
             # and the browser sends it back with subsequent requests.
             # Flask securely signs the data so it can't be tampererd with.
             session.clear()
-            session['user_id'] = user['id']
-            return "User logged in and session established", 200
+            session['username'] = username
+            csrf_token = generate_csrf()
+            return f"User logged in. CSRF Token: {csrf_token}", 200
         
         return f"Error: {error}", 400
 
@@ -94,37 +89,42 @@ def login_required(view):
     return wrapped_view
 
 @app.route('/insecure-update', methods=('GET', 'PUT'))
+@csrf.exempt
 @login_required
 def insecure_update():
     if request.method == 'PUT':
         new_password = request.args.get('new_password')
-        db = get_db()
         error = None
         
         if not new_password:
             return "New password is required", 400
 
-        hashed_pw = generate_password_hash(new_password, method='pbkdf2:sha256')
-        db.execute(
-            "UPDATE user SET password = ? WHERE id = ?",
-            (hashed_pw, g.user['id'])
-        )
-        db.commit()
+        users[g.user['username']]['password'] = generate_password_hash(new_password, method='pbkdf2:sha256')
+
         return "Password updated", 200
     
     return "Send a PUT request to update password with ?new_password=...", 200
 
+@app.route('/secure-update', methods=('GET', 'PUT'))
+@login_required
+def secure_update():
+    if request.method == 'PUT':
+        new_password = request.args.get('new_password')
+        error = None
+        
+        if not new_password:
+            return "New password is required", 400
+
+        users[g.user['username']]['password'] = generate_password_hash(new_password, method='pbkdf2:sha256')
+
+        return "Password updated (with csrf token)", 200
+    
+    return "Send a PUT request to update password with ?new_password=...", 200
 
 @app.before_request
-def load_logged_in_user():
-    user_id = session.get('user_id')
-
-    if user_id is None:
-        g.user = None
-    else:
-        g.user = get_db().execute(
-            'SELECT * FROM user WHERE id = ?', (user_id,)
-        ).fetchone()
+def load_logged_in_user() -> None:
+    username = session.get('username')
+    g.user = users.get(username)
 
 @app.route('/logout')
 def logout():
@@ -133,4 +133,4 @@ def logout():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host="0.0.0.0", port=8080, debug=True)
