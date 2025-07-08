@@ -47,13 +47,13 @@ def insecure_delete_user():
     return f"User {user_to_delete} deleted (pretend)"
 
 #Checks to see if a user is authorized as an admin
-def isAdmin(thisSession):
-    return "username" in thisSession and thisSession.get("role") == "admin"
+def is_admin(this_session):
+    return "role" in this_session and this_session.get("role") == "admin"
 
 @app.route("/secure/admin/delete_user")
 def secure_delete_user():
     #Here we check to make sure that the logged-in user is admin
-    if isAdmin(session):
+    if is_admin(session):
         user_to_delete = request.args.get("user")
         return f"User {user_to_delete} deleted (pretend)"
 
