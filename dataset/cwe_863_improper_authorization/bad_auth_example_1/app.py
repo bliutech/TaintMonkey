@@ -5,8 +5,8 @@ app.secret_key = "secret"
 
 # Fake user database
 users = {
-    "alice": {"password": "alice123", "role": "user"},
-    "admin": {"password": "admin123", "role": "admin"}
+    "alice": {"password": "alice123", "token": "user"},
+    "admin": {"password": "admin123", "token": "admin"},
 }
 
 
@@ -42,7 +42,7 @@ def is_user_in_session(user_string, this_session):
     return user_string in this_session
 
 
-@app.route("/insecure/admin/delete_user")
+@app.delete("/insecure/admin/delete_user")
 def insecure_delete_user():
     if not is_user_in_session("username", session):
         return redirect("/login")
@@ -56,7 +56,7 @@ def is_admin(this_session, role_string, admin_string):
     return role_string in this_session and this_session.get(role_string) == admin_string
 
 
-@app.route("/secure/admin/delete_user")
+@app.delete("/secure/admin/delete_user")
 def secure_delete_user():
     #Here we check to make sure that the logged-in user is admin
     if not is_admin(session, "role", "admin"):
@@ -65,11 +65,16 @@ def secure_delete_user():
     user_to_delete = request.args.get("user")
     if not user_to_delete:
         return f"No user provided to delete"
+    user_deleted = users.get(user_to_delete)
+    if not user_deleted:
+        return f"No user found"
     return f"User {user_to_delete} deleted (pretend)"
 
 
 @app.post("/logout")
 def logout():
+    if not session:
+        return "No Session"
     session.clear()
     return '''
         <h2>You have been logged out.</h2>
