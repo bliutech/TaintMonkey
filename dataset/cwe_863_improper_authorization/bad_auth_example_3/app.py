@@ -1,13 +1,19 @@
-from flask import Flask, request, session
+from flask import Flask, request, session, redirect
 
 app = Flask(__name__)
 app.secret_key = "secret"
 
 # Fake user database
 users = {
-    "alice": {"password": "alice123", "token": "alice secret text"},
-    "jeff": {"password": "jeff123", "token": "jeff secret text"},
+    "alice": "alice123",
+    "jeff": "jeff123",
 }
+#Fake token database
+tokens = dict()
+for user in users:
+    tokens[user] = []
+tokens["alice"].append("you_found_this_secret!")
+tokens["jeff"].append("jeffy_cool_secret")
 
 
 @app.post("/login")
@@ -15,11 +21,24 @@ def login_send():
     username = request.form["username"]
     password = request.form["password"]
 
-    user = users.get(username)
-    if user and user["password"] == password:
+    db_password = users.get(username)
+    if db_password and db_password == password:
         session["username"] = username
-        return f"Welcome, {username}!"
-    return "Invalid credentials"
+
+        return f'''
+            Welcome, {username}!
+            <br>
+            <form action="/home" method="get">
+                <button type="submit">To Home</button>
+            </form>
+        '''
+    return '''
+        Invalid credentials
+            <br>
+        <form action="/home" method="get">
+            <button type="submit">To Home</button>
+        </form>
+    '''
 
 
 @app.get("/login")
@@ -41,8 +60,48 @@ def login_show():
         <form action="/insecure/signup" method="get">
             <button type="submit">Insecure Sign Up</button>
         </form>
+    '''
+
+
+@app.post("/home")
+def home_send():
+    token = request.form.get("token")
+    if not token:
+        return "No token given"
+    if not is_user_in_session("username", session):
+        return "No user in session"
+    username = session.get("username")
+    if username in tokens:
+        tokens[username].append(token)
+    else:
+        tokens[username] = [token]
+    return f'''
+    Token {token} added to tokens!
+    <br>
+    <form action="/home" method="get">
+        <button type="submit">Back Home</button>
+    </form>
+    '''
+
+@app.get("/home")
+def home_show():
+    if not is_user_in_session("username", session):
+        return redirect("/login")
+    username = session.get("username")
+    return f'''
+        <h2>Home</h2>
+        Hey, {username}!
+        <br>
+        <form method="post">
+            <h2>Secret Tokens</h2>
+            Enter Token: <input name="token"><br>
+            <input type="submit" value="Add Token">
+        </form>
         <form action="/secret" method="post">
-            <button type="submit">Open Secret Token</button>
+            <button type="submit">Open Secret Tokens</button>
+        </form>
+        <form action="/logout" method="post">
+            <button type="submit">Logout</button>
         </form>
     '''
 
@@ -59,20 +118,36 @@ def secret():
 
     #This should never be true
     if not user_taken(username, users):
-        return "this should not happen"
-    token = users[username]["token"]
-    return f"{username}'s secret token is {token}!"
+        return "this should not happen - user"
+    user_tokens = tokens.get(username)
+    if user_tokens is None:
+        return "this should not happen - tokens"
+    token_string =  f"{username}'s secret tokens are:<br>"
+    for token in user_tokens:
+        token_string += f" {token}<br>"
+    token_string += '''
+        <form action="/home" method="get">
+            <button type="submit">Back Home</button>
+        </form>
+    '''
+    return token_string
 
 
 @app.post("/insecure/signup")
 def insecure_signup_send():
-    username = request.form["username"]
-    password = request.form["password"]
-    token = request.form["token"]
+    username = request.form.get("username")
+    password = request.form.get("password")
+    if username is None or password is None:
+        return "No username or no password"
 
     #Doesn't include userTaken function, meaning someone can override another person's account
-    users[username] = {"password": password, "token": token}
-    return f"{username}, registered!"
+    users[username] = password
+    return f'''
+        {username}, you're registered!
+        <form action="/login" method="get">
+            <button type="submit">Login</button>
+        </form>
+    '''
 
 @app.get("/insecure/signup")
 def insecure_signup_get():
@@ -81,7 +156,6 @@ def insecure_signup_get():
             <h2>Sign Up</h2>
             Username: <input name="username"><br>
             Password: <input name="password" type="password"><br>
-            Secret Token: <input name="token" type="password"><br>
             <input type="submit" value="Sign Up">
         </form>
         <br>
@@ -92,20 +166,31 @@ def insecure_signup_get():
 
 
 #Monkey Patch function
-def user_taken(user, database):
-    return user in database
+def user_taken(user_given, database_given):
+    return user_given in database_given
 
 
 @app.post("/secure/signup")
 def secure_signup_send():
-    username = request.form["username"]
-    password = request.form["password"]
-    token = request.form["token"]
+    username = request.form.get("username")
+    password = request.form.get("password")
+    if username is None or password is None:
+        return "No username or no password"
 
     if user_taken(username, users):
-        return "username already taken"
-    users[username] = {"password": password, "token": token}
-    return f"{username}, registered!"
+        return f'''
+            Username already taken!
+            <form action="/secure/signup" method="get">
+                <button type="submit">Back</button>
+            </form>
+        '''
+    users[username] = password
+    return f'''
+        {username}, you're registered!
+        <form action="/login" method="get">
+            <button type="submit">Login</button>
+        </form>
+    '''
 
 
 @app.get("/secure/signup")
@@ -115,7 +200,6 @@ def secure_signup_get():
             <h2>Sign Up</h2>
             Username: <input name="username"><br>
             Password: <input name="password" type="password"><br>
-            Secret Token: <input name="token" type="password"><br>
             <input type="submit" value="Sign Up">
         </form>
         <br>
