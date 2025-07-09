@@ -9,19 +9,21 @@ users = {
     "admin": {"password": "admin123", "role": "admin"}
 }
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
 
-        user = users.get(username)
-        if user and user["password"] == password:
-            session["username"] = username
-            session["role"] = user["role"]
-            return f"Welcome, {username}!"
-        return "Invalid credentials"
+@app.post("/login")
+def login_send():
+    username = request.form["username"]
+    password = request.form["password"]
 
+    user = users.get(username)
+    if user and user["password"] == password:
+        session["username"] = username
+        session["role"] = user["role"]
+        return f"Welcome, {username}!"
+    return "Invalid credentials"
+
+@app.get("/login")
+def login_show():
     return '''
         <form method="post">
             <h2>Login</h2>
@@ -30,15 +32,15 @@ def login():
             <input type="submit" value="Login">
         </form>
         <br>
-        <form action="/logout" method="get">
+        <form action="/logout" method="post">
             <button type="submit">Logout</button>
         </form>
     '''
 
+
 def is_user_in_session(user_string, this_session):
     return user_string in this_session
 
-@app.get("/logout")
 
 @app.route("/insecure/admin/delete_user")
 def insecure_delete_user():
@@ -53,6 +55,7 @@ def insecure_delete_user():
 def is_admin(this_session, role_string, admin_string):
     return role_string in this_session and this_session.get(role_string) == admin_string
 
+
 @app.route("/secure/admin/delete_user")
 def secure_delete_user():
     #Here we check to make sure that the logged-in user is admin
@@ -65,7 +68,7 @@ def secure_delete_user():
     return f"User {user_to_delete} deleted (pretend)"
 
 
-@app.route("/logout")
+@app.post("/logout")
 def logout():
     session.clear()
     return '''
@@ -74,6 +77,7 @@ def logout():
             <button type="submit">Back to Login</button>
         </form>
     '''
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
