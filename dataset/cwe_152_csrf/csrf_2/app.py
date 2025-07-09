@@ -84,7 +84,7 @@ def login_required(view):
     
     return wrapped_view
 
-@app.post('/insecure-update')
+@app.get('/insecure-update')
 @login_required
 @csrf.exempt
 def insecure_update():
@@ -99,7 +99,7 @@ def insecure_update():
     return "Password updated", 200
     
 
-@app.post('/secure-update')
+@app.get('/secure-update')
 @login_required
 def secure_update():
     new_password = request.args.get('new_password')
