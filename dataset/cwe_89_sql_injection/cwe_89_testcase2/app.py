@@ -7,6 +7,11 @@ from db import init_db
 app = Flask(__name__)
 init_db(app)
 
+def pattern_match(username):
+    pattern = '^[a-zA-Z0-9]+$'
+    if not re.search(pattern, username) or not re.search(pattern, password):
+        return "Invalid input: only alphanumeric characters are allowed", 400
+        
 @app.route('/secure-login', methods=['POST'])
 def secure_login():
     username = request.args.get('username')
@@ -15,9 +20,7 @@ def secure_login():
     if not username or not password:
         return "Username and password are required", 400
 
-    pattern = '^[a-zA-Z0-9]+$'
-    if not re.search(pattern, username) or not re.search(pattern, password):
-        return "Invalid input: only alphanumeric characters are allowed", 400
+    pattern_match(username)
 
     query = text("SELECT * FROM user WHERE username = :username AND password = :password")
     user = db.db.session.execute(query, {"username": username, "password": password}).fetchone()
