@@ -1,6 +1,3 @@
-# not tested yet
-
-from _typeshed import TraceFunction
 from flask import jsonify
 import functools
 
@@ -27,8 +24,8 @@ def index():
 # let res = await fetch('https://shiny-sniffle-74w799vjw6jfw57v-8080.app.github.dev/register?username=shay&password=bar', {method:'POST', mode:'no-cors'})
 @app.post('/register')
 def register():
-    username = request.args.get('username') or 'test_username'
-    password = request.args.get('password') or 'test_password'
+    username = request.args.get('username')
+    password = request.args.get('password') 
     error = None
 
     if not username:
@@ -49,8 +46,8 @@ def register():
     
 @app.post('/login')
 def login():
-    username = request.args.get('username') or 'test_username'
-    password = request.args.get('password') or 'test_password'
+    username = request.args.get('username')
+    password = request.args.get('password') 
     error = None
     user = users.get(username)
 
@@ -107,12 +104,13 @@ def secure_update():
     valid = True
     if csrf_token not in nonces:
         valid = False
-    nonces.remove(csrf_token)
-    session['csrf_nonces'] = nonces
-    session.modified = True
 
     if not valid:
         return 'Invalid or missing CSRF token', 403
+
+    nonces.remove(csrf_token)
+    session['csrf_nonces'] = nonces
+    session.modified = True
 
     if not new_password:
         return 'New password is required', 400

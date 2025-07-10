@@ -1,5 +1,3 @@
-# not tested yet
-
 from flask_wtf.csrf import generate_csrf
 from flask_wtf.csrf import CSRFProtect
 from flask import jsonify
@@ -31,8 +29,8 @@ def index():
 @app.post('/register')
 @csrf.exempt
 def register():
-    username = request.args.get('username') or 'test_username'
-    password = request.args.get('password') or 'test_password'
+    username = request.args.get('username') 
+    password = request.args.get('password')
     error = None
 
     if not username:
@@ -54,8 +52,8 @@ def register():
 @app.post('/login')
 @csrf.exempt
 def login():
-    username = request.args.get('username') or 'test_username'
-    password = request.args.get('password') or 'test_password'
+    username = request.args.get('username')
+    password = request.args.get('password') 
     error = None
     user = users.get(username)
 

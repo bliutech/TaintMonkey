@@ -1,5 +1,3 @@
-# TODO: passing csrf token to get request
-
 import functools
 
 from flask import (
@@ -29,8 +27,8 @@ def index():
 # let res = await fetch('https://shiny-sniffle-74w799vjw6jfw57v-8080.app.github.dev/register?username=shay&password=bar', {method:'POST', mode:'no-cors'})
 @app.post('/register')
 def register():
-    username = request.args.get('username') or 'test_username'
-    password = request.args.get('password') or 'test_password'
+    username = request.args.get('username')
+    password = request.args.get('password') 
     error = None
 
     if not username:
@@ -51,8 +49,8 @@ def register():
     
 @app.post('/login')
 def login():
-    username = request.args.get('username') or 'test_username'
-    password = request.args.get('password') or 'test_password'
+    username = request.args.get('username') 
+    password = request.args.get('password')
     error = None
     user = users.get(username)
 
