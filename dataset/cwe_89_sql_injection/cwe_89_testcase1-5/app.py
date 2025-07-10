@@ -49,7 +49,7 @@ def secure_signup():
     if not username or not password:
         return "Username and password are required", 400
 
-    # will be able to take the strings as a literal in the second-level rather than taking it as a direct possible code
+    # for inserting values as string literals rather than potential sql commands
     query = text("INSERT INTO user (username, password) VALUES (:username, :password)")
     
     try:
