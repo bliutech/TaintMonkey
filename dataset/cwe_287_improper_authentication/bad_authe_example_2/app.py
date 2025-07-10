@@ -74,13 +74,22 @@ def secure_login_show():
 
 @app.post("/secure/login")
 def secure_login_send():
-    username = request.form["username"]
-    password = request.form["password"]
+    username = request.form.get("username")
+    password = request.form.get("password")
 
-    if username in users and users[username] == password:
+    if username is None or password is None:
+        return "Weird, this shouldn't happen"
+
+    if user_login_info_correct(username, password, users):
         session["username"] = username
         return f"Welcome, {username}!"
     return "Invalid credentials"
+
+
+#Monkey patch?
+def user_login_info_correct(username, password, database):
+    return username in database and username[username] == password
+
 
 @app.post("/logout")
 def logout():
