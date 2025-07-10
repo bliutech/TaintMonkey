@@ -9,12 +9,12 @@ def say_hi(name):
 
 @app.get("/insecure")
 def vulnerable_xss():
-    name = request.args.get("name", "")
+    name = request.args.get("name", "user")
     return say_hi(name)
 
 @app.get("/secure")
 def sanitized_xss():
-    name = request.args.get("name", "")
+    name = request.args.get("name", "user")
     name = escape(name)
     return say_hi(name)
 
