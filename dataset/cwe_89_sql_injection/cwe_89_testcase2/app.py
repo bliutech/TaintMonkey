@@ -35,7 +35,7 @@ def insecure_signup():
     except Exception as e:
         db.db.session.rollback()
         return f"Error creating user", 500
-
+    
 @app.route('/secure-login', methods=['POST'])
 def secure_login():
     username = request.args.get('username')
