@@ -21,13 +21,11 @@ class User(db.Model):
 with app.app_context():
    db.create_all()
    
-   # Check if the table exists
    from sqlalchemy import inspect
    inspector = inspect(db.engine)
    if 'user' in inspector.get_table_names():
        print("User table exists.")
        
-       # Check if there are any users
        if User.query.count() == 0:
            admin = User(username='admin', password='adminpass')
            user = User(username='testuser', password='password123')
