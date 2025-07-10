@@ -40,6 +40,25 @@ def insecure_signup():
     except Exception as e:
         db.session.rollback()
         return f"Error creating user: {str(e)}", 500
+    
+@app.route('/secure-signup', methods=['POST'])
+def secure_signup():
+    username = request.args.get('username')
+    password = request.args.get('password')
+    
+    if not username or not password:
+        return "Username and password are required", 400
+
+    # will be able to take the strings as a literal in the second-level rather than taking it as a direct possible code
+    query = text("INSERT INTO user (username, password) VALUES (:username, :password)")
+    
+    try:
+        db.session.execute(query, {"username": username, "password": password})
+        db.session.commit()
+        return "User created securely", 201
+    except Exception as e:
+        db.session.rollback()
+        return f"Error creating user: {str(e)}", 500
 
 @app.route('/secure-login', methods=['POST'])
 def secure_login():
