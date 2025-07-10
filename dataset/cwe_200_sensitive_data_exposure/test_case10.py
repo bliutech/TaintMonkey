@@ -8,7 +8,7 @@ def register_insecure_phone ():
     phone_num = request.args.get("phone_number")
     if not phone_num:
         return "Please enter a valid Phone Number", 400
-    app.logger.info (f"Phone Number entered: {phone_num}")
+    print("Phone Number entered: "+phone_num)
     return "Phone Number: " + phone_num, 200
 
 @app.post("/secure_phone")
@@ -17,7 +17,7 @@ def register_secure_phone():
     if not phone_num:
         return "Please enter a valid Phone Number", 400
     anon = psudo(phone_num)
-    app.logger.info (f"Phone Number entered: {anon}")
+    print("Phone Number entered: "+anon)
     return "Phone Number: " + anon, 200
 
 def psudo(phone_num):
@@ -27,4 +27,3 @@ def psudo(phone_num):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
-
