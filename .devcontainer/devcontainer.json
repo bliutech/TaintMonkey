@@ -1,44 +1,44 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/debian
 {
-	"name": "GSET Development Environment",
+	'name': 'GSET Development Environment',
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/base:bookworm",
+	'image': 'mcr.microsoft.com/devcontainers/base:bookworm',
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
-	"features": {
-		"ghcr.io/devcontainers/features/python:1": {
-			"version": "3.13",
-			"toolsToInstall": ["ruff"]
+	'features': {
+		'ghcr.io/devcontainers/features/python:1': {
+			'version': '3.13',
+			'toolsToInstall': ['ruff']
 		},
-		"ghcr.io/devcontainers/features/docker-in-docker:2": {
-			"version": "latest"
+		'ghcr.io/devcontainers/features/docker-in-docker:2': {
+			'version': 'latest'
 		}
 	},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [3000, 5000, 8000, 8080],
+	'forwardPorts': [3000, 5000, 8000, 8080],
 
 	// Configure tool-specific properties.
-	"customizations": {
-		"codespaces": {
-			"disableAutomaticConfiguration": true,
-			"openFiles": ["README.md"]
+	'customizations': {
+		'codespaces': {
+			'disableAutomaticConfiguration': true,
+			'openFiles': ['README.md']
 		},
-		"vscode": {
-			"extensions": [
-				"meta.pyrefly"
+		'vscode': {
+			'extensions': [
+				'meta.pyrefly'
 			],
-			"settings": {
-				"workbench.colorTheme": "Default Dark Modern"
+			'settings': {
+				'workbench.colorTheme': 'Default Dark Modern'
 			}
 		}
 	},
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+	// 'remoteUser': 'root'
 
 	// Runs after the container is created.
 	// Configure recommended Git config. Waiting until post start to allow copying of local .gitconfig if exists.
-	"postStartCommand": "git config --global pull.rebase true && git config --global push.autoSetupRemote true"
+	'postStartCommand': 'git config --global pull.rebase true && git config --global push.autoSetupRemote true'
 }

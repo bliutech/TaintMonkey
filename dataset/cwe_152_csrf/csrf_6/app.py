@@ -1,5 +1,8 @@
-# TODO: passing csrf token to get request
+# not tested yet
 
+from flask_wtf.csrf import generate_csrf
+from flask_wtf.csrf import CSRFProtect
+from flask import jsonify
 import functools
 
 from flask import (
@@ -7,19 +10,17 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from itsdangerous import URLSafeTimedSerializer
-
 users = {}
 app = Flask(__name__)
+
+csrf = CSRFProtect()
+csrf.init_app(app)
 
 app.config.update(
     SECRET_KEY = 'dev',
     SESSION_COOKIE_SAMESITE=None,
     SESSION_COOKIE_SECURE=True
 )
-
-serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
-
 
 @app.get('/')
 def index():
@@ -28,6 +29,7 @@ def index():
 # js code to test in browser console:
 # let res = await fetch('https://shiny-sniffle-74w799vjw6jfw57v-8080.app.github.dev/register?username=shay&password=bar', {method:'POST', mode:'no-cors'})
 @app.post('/register')
+@csrf.exempt
 def register():
     username = request.args.get('username') or 'test_username'
     password = request.args.get('password') or 'test_password'
@@ -50,6 +52,7 @@ def register():
     return 'User registered', 200
     
 @app.post('/login')
+@csrf.exempt
 def login():
     username = request.args.get('username') or 'test_username'
     password = request.args.get('password') or 'test_password'
@@ -66,11 +69,8 @@ def login():
 
     session.clear()
     session['username'] = username
-
-    csrf_token = serializer.dumps(username, salt='csrf-protect')
-    session['csrf_token'] = csrf_token
-
-    return f'User logged in, CSRF Token: {csrf_token}', 200
+    csrf_token = generate_csrf()
+    return f'User logged in, CSRF token: {csrf_token}', 200
 
 def login_required(view):
     @functools.wraps(view)
@@ -82,44 +82,21 @@ def login_required(view):
     
     return wrapped_view
 
-@app.get('/insecure-update')
+@app.post('/insecure-delete')
+@csrf.exempt
 @login_required
-def insecure_update():
-    new_password = request.args.get('new_password') or request.form.get('new_password')
-    error = None
-    
-    if not new_password:
-        return 'New password is required', 400
-
-    users[g.user['username']]['password'] = generate_password_hash(new_password, method='pbkdf2:sha256')
-
-    return 'Password updated', 200
+def insecute_delete():
+    del users[g.user['username']]
+    session.clear()
+    return 'Account deleted'
     
 
-@app.get('/secure-update')
+@app.post('/secure-delete')
 @login_required
-def secure_update():
-    new_password = request.args.get('new_password') or request.form.get('new_password')
-    token = request.headers.get('X-CSRFToken') or request.args.get('csrf_token') or request.form.get('csrf_token')
-    error = None
-
-    if not token:
-        return 'Missing CSRF token', 400
-
-    try:
-        token_username = serializer.loads(token, salt='csrf-protect', max_age=3600)
-    except Exception:
-        return 'Invalid or expired CSRF token', 403
-
-    if token_username != g.user['username']:
-        return 'CSRF token does not match user', 403
-    
-    if not new_password:
-        return 'New password is required', 400
-
-    users[g.user['username']]['password'] = generate_password_hash(new_password, method='pbkdf2:sha256')
-
-    return 'Password updated (with csrf token)', 200
+def secure_delete():
+    del users[g.user['username']]
+    session.clear()
+    return 'Account deleted'
     
 @app.before_request
 def load_logged_in_user() -> None:

@@ -1,5 +1,6 @@
 # TODO: passing csrf token to get request
 
+from flask import jsonify
 import functools
 
 from flask import (
@@ -7,7 +8,7 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from itsdangerous import URLSafeTimedSerializer
+import hmac, hashlib, base64
 
 users = {}
 app = Flask(__name__)
@@ -17,9 +18,6 @@ app.config.update(
     SESSION_COOKIE_SAMESITE=None,
     SESSION_COOKIE_SECURE=True
 )
-
-serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
-
 
 @app.get('/')
 def index():
@@ -67,10 +65,13 @@ def login():
     session.clear()
     session['username'] = username
 
-    csrf_token = serializer.dumps(username, salt='csrf-protect')
-    session['csrf_token'] = csrf_token
+    csrf_token = hmac.new(app.config['SECRET_KEY'].encode('utf-8'), username.encode('utf-8'), hashlib.sha256).digest()
+    csrf_token = base64.urlsafe_b64encode(csrf_token).decode('utf-8')
 
-    return f'User logged in, CSRF Token: {csrf_token}', 200
+    response = jsonify({'message': 'User logged in'})
+    response.set_cookie('XSRF-TOKEN', csrf_token, httponly=False, samesite='Lax')
+
+    return response
 
 def login_required(view):
     @functools.wraps(view)
@@ -85,7 +86,7 @@ def login_required(view):
 @app.get('/insecure-update')
 @login_required
 def insecure_update():
-    new_password = request.args.get('new_password') or request.form.get('new_password')
+    new_password = request.args.get('new_password')
     error = None
     
     if not new_password:
@@ -99,21 +100,12 @@ def insecure_update():
 @app.get('/secure-update')
 @login_required
 def secure_update():
-    new_password = request.args.get('new_password') or request.form.get('new_password')
-    token = request.headers.get('X-CSRFToken') or request.args.get('csrf_token') or request.form.get('csrf_token')
-    error = None
+    new_password = request.args.get('new_password')
+    token_cookie = request.cookies.get('XSRF-TOKEN')
+    token_header = request.headers.get('X-CSRFToken')
+    if token_cookie != token_header:
+        return 'Incorrect CSRF token', 403
 
-    if not token:
-        return 'Missing CSRF token', 400
-
-    try:
-        token_username = serializer.loads(token, salt='csrf-protect', max_age=3600)
-    except Exception:
-        return 'Invalid or expired CSRF token', 403
-
-    if token_username != g.user['username']:
-        return 'CSRF token does not match user', 403
-    
     if not new_password:
         return 'New password is required', 400
 

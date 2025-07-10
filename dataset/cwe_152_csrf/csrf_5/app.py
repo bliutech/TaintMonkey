@@ -1,25 +1,25 @@
-# TODO: passing csrf token to get request
+# not working
 
+from flask import jsonify
 import functools
 
 from flask import (
     Flask, flash, g, redirect, request, session, url_for
 )
 from werkzeug.security import check_password_hash, generate_password_hash
-
-from itsdangerous import URLSafeTimedSerializer
+from flask_seasurf import SeaSurf
 
 users = {}
 app = Flask(__name__)
+
+csrf = SeaSurf()
+csrf.init_app(app)
 
 app.config.update(
     SECRET_KEY = 'dev',
     SESSION_COOKIE_SAMESITE=None,
     SESSION_COOKIE_SECURE=True
 )
-
-serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
-
 
 @app.get('/')
 def index():
@@ -66,11 +66,7 @@ def login():
 
     session.clear()
     session['username'] = username
-
-    csrf_token = serializer.dumps(username, salt='csrf-protect')
-    session['csrf_token'] = csrf_token
-
-    return f'User logged in, CSRF Token: {csrf_token}', 200
+    return f'User logged in. CSRF Token', 200
 
 def login_required(view):
     @functools.wraps(view)
@@ -82,8 +78,9 @@ def login_required(view):
     
     return wrapped_view
 
-@app.get('/insecure-update')
+@app.post('/insecure-update')
 @login_required
+@csrf.exempt
 def insecure_update():
     new_password = request.args.get('new_password') or request.form.get('new_password')
     error = None
@@ -96,23 +93,11 @@ def insecure_update():
     return 'Password updated', 200
     
 
-@app.get('/secure-update')
+@app.post('/secure-update')
 @login_required
 def secure_update():
     new_password = request.args.get('new_password') or request.form.get('new_password')
-    token = request.headers.get('X-CSRFToken') or request.args.get('csrf_token') or request.form.get('csrf_token')
     error = None
-
-    if not token:
-        return 'Missing CSRF token', 400
-
-    try:
-        token_username = serializer.loads(token, salt='csrf-protect', max_age=3600)
-    except Exception:
-        return 'Invalid or expired CSRF token', 403
-
-    if token_username != g.user['username']:
-        return 'CSRF token does not match user', 403
     
     if not new_password:
         return 'New password is required', 400
