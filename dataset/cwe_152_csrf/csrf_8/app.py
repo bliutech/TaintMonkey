@@ -1,13 +1,13 @@
-# TODO: passing csrf token to get request
+# not tested yet
 
+from flask import jsonify
 import functools
 
 from flask import (
     Flask, flash, g, redirect, request, session, url_for
 )
 from werkzeug.security import check_password_hash, generate_password_hash
-
-from itsdangerous import URLSafeTimedSerializer
+import hmac, hashlib, base64, time
 
 users = {}
 app = Flask(__name__)
@@ -17,9 +17,6 @@ app.config.update(
     SESSION_COOKIE_SAMESITE=None,
     SESSION_COOKIE_SECURE=True
 )
-
-serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
-
 
 @app.get('/')
 def index():
@@ -48,6 +45,14 @@ def register():
             'password': generate_password_hash(password)
         }
     return 'User registered', 200
+
+def generate_csrf_hmac(username: str, path: str, timestamp: int) -> str:
+    secret = app.config['SECRET_KEY']
+    timestamp = int(time.time())
+    message = f'{username}:/secure-transfer:{timestamp}'.encode('utf-8')
+    digest = hmac.new(secret.encode('utf-8'), message, hashlib.sha256).digest()
+    token = base64.urlsafe_b64encode(digest).decode('utf-8')
+    return token
     
 @app.post('/login')
 def login():
@@ -67,10 +72,14 @@ def login():
     session.clear()
     session['username'] = username
 
-    csrf_token = serializer.dumps(username, salt='csrf-protect')
-    session['csrf_token'] = csrf_token
+    timestamp = int(time.time())
+    token = generate_csrf_hmac(username, '/secure-transfer', timestamp)
 
-    return f'User logged in, CSRF Token: {csrf_token}', 200
+    return jsonify({
+        'message': 'User logged in',
+        'csrf_token': token,
+        'timestamp': timestamp
+    })
 
 def login_required(view):
     @functools.wraps(view)
@@ -82,11 +91,10 @@ def login_required(view):
     
     return wrapped_view
 
-@app.get('/insecure-update')
+@app.post('/insecure-update')
 @login_required
 def insecure_update():
     new_password = request.args.get('new_password') or request.form.get('new_password')
-    error = None
     
     if not new_password:
         return 'New password is required', 400
@@ -94,32 +102,36 @@ def insecure_update():
     users[g.user['username']]['password'] = generate_password_hash(new_password, method='pbkdf2:sha256')
 
     return 'Password updated', 200
-    
 
-@app.get('/secure-update')
+@app.post('/secure-update')
 @login_required
 def secure_update():
     new_password = request.args.get('new_password') or request.form.get('new_password')
-    token = request.headers.get('X-CSRFToken') or request.args.get('csrf_token') or request.form.get('csrf_token')
-    error = None
+    received_token = request.headers.get('X-CSRFToken')
+    timestamp = request.headers.get('X-CSRFTime')
 
-    if not token:
-        return 'Missing CSRF token', 400
+    if not received_token or not timestamp:
+        return 'Missing CSRF token or timestamp', 403
 
-    try:
-        token_username = serializer.loads(token, salt='csrf-protect', max_age=3600)
-    except Exception:
-        return 'Invalid or expired CSRF token', 403
-
-    if token_username != g.user['username']:
-        return 'CSRF token does not match user', 403
-    
     if not new_password:
         return 'New password is required', 400
 
+    try:
+        timestamp = int(timestamp)
+    except ValueError:
+        return 'Invalid tiemstamp', 400
+
+    if abs(time.time() - timestamp) > 500:
+        return 'CSRF token expired', 403
+
+    expected_token = generate_csrf_hmac(g.user['username'], '/secure-transfer', timestamp)
+
+    if not hmac.compare_digest(received_token, expected_token):
+        return 'Invalid CSRF token', 403
+
     users[g.user['username']]['password'] = generate_password_hash(new_password, method='pbkdf2:sha256')
 
-    return 'Password updated (with csrf token)', 200
+    return 'Password updated', 200
     
 @app.before_request
 def load_logged_in_user() -> None:
