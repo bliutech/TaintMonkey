@@ -27,9 +27,6 @@ def insecure_signup():
 def login():
     username = request.args.get('username')
     password = request.args.get('password')
-
-    if "'" in username:
-        return "Invalid username: single quote not allowed", 400
     
     if not request.args.get('username') or not request.args.get('password'):
         return "Username and password are required", 400
