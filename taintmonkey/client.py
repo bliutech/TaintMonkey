@@ -1,30 +1,5 @@
 """
 Custom Flask test client for tainting requests.
-
-
-TODO(bliutech): migrate this example to a unit test.
-
-Example.
-app = Flask(__name__)
-register_taint_client(app)
-
-@app.route("/", methods=["GET", "POST"])
-def example():
-    data = request.args.get("example")
-    import json
-    print("data", type(data), json.dumps(data, indent=4))
-    print(data)
-    print(request.is_tainted()) # type: ignore
-    return "Hello"
-
-app.config.update({
-    "TESTING": True,
-})
-
-tc = app.test_client()
-print(tc.post("/?example=foo", json={
-    "example": "data"
-}))
 """
 
 from flask import Flask, Request, request
@@ -33,7 +8,7 @@ from flask.testing import FlaskClient, EnvironBuilder, BaseRequest
 import typing as t
 from typing import override
 
-from werkzeug.datastructures.structures import MultiDict
+from werkzeug.datastructures.structures import MultiDict, ImmutableMultiDict
 
 from taintmonkey.taint import TaintedStr
 
@@ -71,6 +46,7 @@ class TaintRequest(Request):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._clobber_args()
+        self._clobber_form()
 
     def is_tainted(self):  # type: ignore
         """
@@ -83,6 +59,12 @@ class TaintRequest(Request):
         for k, v in self.args.items():
             new_args.append((k, TaintedStr(v)))
         self.args = MultiDict(new_args)  # type: ignore
+
+    def _clobber_form(self):
+        new_args = []
+        for k, v in self.form.items():
+            new_args.append((k, TaintedStr(v)))
+        self.form = ImmutableMultiDict(new_args)  # type: ignore
 
     # TODO(bliutech): add support for other request constructs
     # such as JSON (i.e. request.json())
