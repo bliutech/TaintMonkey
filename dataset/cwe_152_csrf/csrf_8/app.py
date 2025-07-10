@@ -1,5 +1,3 @@
-# not tested yet
-
 from flask import jsonify
 import functools
 
@@ -26,8 +24,8 @@ def index():
 # let res = await fetch('https://shiny-sniffle-74w799vjw6jfw57v-8080.app.github.dev/register?username=shay&password=bar', {method:'POST', mode:'no-cors'})
 @app.post('/register')
 def register():
-    username = request.args.get('username') or 'test_username'
-    password = request.args.get('password') or 'test_password'
+    username = request.args.get('username') 
+    password = request.args.get('password') 
     error = None
 
     if not username:
@@ -48,16 +46,15 @@ def register():
 
 def generate_csrf_hmac(username: str, path: str, timestamp: int) -> str:
     secret = app.config['SECRET_KEY']
-    timestamp = int(time.time())
-    message = f'{username}:/secure-transfer:{timestamp}'.encode('utf-8')
+    message = f'{username}:/secure-update:{timestamp}'.encode('utf-8')
     digest = hmac.new(secret.encode('utf-8'), message, hashlib.sha256).digest()
     token = base64.urlsafe_b64encode(digest).decode('utf-8')
     return token
     
 @app.post('/login')
 def login():
-    username = request.args.get('username') or 'test_username'
-    password = request.args.get('password') or 'test_password'
+    username = request.args.get('username')
+    password = request.args.get('password') 
     error = None
     user = users.get(username)
 
@@ -124,10 +121,10 @@ def secure_update():
     if abs(time.time() - timestamp) > 500:
         return 'CSRF token expired', 403
 
-    expected_token = generate_csrf_hmac(g.user['username'], '/secure-transfer', timestamp)
+    expected_token = generate_csrf_hmac(g.user['username'], '/secure-update', timestamp)
 
     if not hmac.compare_digest(received_token, expected_token):
-        return 'Invalid CSRF token', 403
+        return f'Invalid CSRF token - expected: {expected_token}, received: {received_token}', 403
 
     users[g.user['username']]['password'] = generate_password_hash(new_password, method='pbkdf2:sha256')
 

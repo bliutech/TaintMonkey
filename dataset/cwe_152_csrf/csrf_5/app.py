@@ -12,8 +12,7 @@ from flask_seasurf import SeaSurf
 users = {}
 app = Flask(__name__)
 
-csrf = SeaSurf()
-csrf.init_app(app)
+csrf = SeaSurf(app)
 
 app.config.update(
     SECRET_KEY = 'dev',
@@ -28,9 +27,10 @@ def index():
 # js code to test in browser console:
 # let res = await fetch('https://shiny-sniffle-74w799vjw6jfw57v-8080.app.github.dev/register?username=shay&password=bar', {method:'POST', mode:'no-cors'})
 @app.post('/register')
+@csrf.exempt
 def register():
-    username = request.args.get('username') or 'test_username'
-    password = request.args.get('password') or 'test_password'
+    username = request.args.get('username') 
+    password = request.args.get('password')
     error = None
 
     if not username:
@@ -49,10 +49,10 @@ def register():
         }
     return 'User registered', 200
     
-@app.post('/login')
+@app.get('/login')
 def login():
-    username = request.args.get('username') or 'test_username'
-    password = request.args.get('password') or 'test_password'
+    username = request.args.get('username')
+    password = request.args.get('password')
     error = None
     user = users.get(username)
 
@@ -66,7 +66,7 @@ def login():
 
     session.clear()
     session['username'] = username
-    return f'User logged in. CSRF Token', 200
+    return f'User logged in', 200
 
 def login_required(view):
     @functools.wraps(view)
