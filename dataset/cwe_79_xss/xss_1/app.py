@@ -1,3 +1,4 @@
+## https://markupsafe.palletsprojects.com/en/stable/
 from markupsafe import escape
 from flask import Flask, request
 
@@ -6,12 +7,12 @@ app = Flask(__name__)
 def say_hi(name):
     return f"<h1>Hi {name}!</h1>"
 
-@app.route("/xss")
+@app.get("/insecure")
 def vulnerable_xss():
     name = request.args.get("name", "")
     return say_hi(name)
 
-@app.route("/xss_sanitized")
+@app.get("/secure")
 def sanitized_xss():
     name = request.args.get("name", "")
     name = escape(name)
