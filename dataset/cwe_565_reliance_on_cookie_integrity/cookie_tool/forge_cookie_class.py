@@ -12,7 +12,6 @@ class CustomSessionInterface(SecureCookieSessionInterface):
         return super().get_signing_serializer(app)
 
 
-# noinspection PyPep8Naming
 class Cookie_Forger:
 
     @staticmethod
