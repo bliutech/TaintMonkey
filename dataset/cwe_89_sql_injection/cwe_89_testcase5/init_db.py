@@ -1,7 +1,13 @@
 from flask import Flask
 from db import db, init_db
 from sqlalchemy import Column, Integer, String
+import os
 
+# Delete the database file if it exists
+db_path = os.path.join('instance', 'your_database.db')
+if os.path.exists(db_path):
+    os.remove(db_path)
+    print("Removed existing database file.")
 
 app = Flask(__name__)
 init_db(app)
@@ -19,33 +25,20 @@ class User(db.Model):
 
 
 with app.app_context():
+   # Drop all tables and recreate them
+   db.drop_all()
    db.create_all()
    
-   from sqlalchemy import inspect
-   inspector = inspect(db.engine)
-   if 'user' in inspector.get_table_names():
-       print("User table exists.")
-       
-       if User.query.count() == 0:
-           admin = User(username='admin', password='adminpass')
-           user = User(username='testuser', password='password123')
-          
-           db.session.add(admin)
-           db.session.add(user)
-           db.session.commit()
-           print("Database initialized with test users.")
-       else:
-           print("Database already contains users.")
-   else:
-       print("User table does not exist. Creating it now...")
-       db.create_all()
-       admin = User(username='admin', password='adminpass')
-       user = User(username='testuser', password='password123')
-       
-       db.session.add(admin)
-       db.session.add(user)
-       db.session.commit()
-       print("User table created and initialized with test users.")
+   print("User table created.")
+   
+   # Add test users
+   admin = User(username='admin', password='adminpass')
+   user = User(username='testuser', password='password123')
+   
+   db.session.add(admin)
+   db.session.add(user)
+   db.session.commit()
+   print("Database initialized with test users.")
 
 
 print("Database setup complete!")
