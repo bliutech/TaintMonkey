@@ -4,7 +4,7 @@ from flask import jsonify
 import functools
 
 from flask import (
-    Flask, flash, g, redirect, request, session, url_for
+    Flask, flash, g, redirect, request, session, url_for, Response
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_seasurf import SeaSurf
@@ -24,13 +24,23 @@ app.config.update(
 def index():
     return 'Welcome to this Very Secure Web App!'
 
-# js code to test in browser console:
-# let res = await fetch('https://shiny-sniffle-74w799vjw6jfw57v-8080.app.github.dev/register?username=shay&password=bar', {method:'POST', mode:'no-cors'})
+@app.get('/register')
+@csrf.exempt
+def show_register_form():
+    return Response('''
+        <h2>Register</h2>
+        <form method="post" action="/register">
+            <input type="text" name="username" placeholder="Username" required><br>
+            <input type="password" name="password" placeholder="Password" required><br>
+            <button type="submit">Register</button>
+        </form>
+    ''', mimetype='text/html')
+
 @app.post('/register')
 @csrf.exempt
 def register():
-    username = request.args.get('username') 
-    password = request.args.get('password')
+    username = request.args.get('username') or request.form.get('username')
+    password = request.args.get('password') or request.form.get('password')
     error = None
 
     if not username:
@@ -48,11 +58,23 @@ def register():
             'password': generate_password_hash(password)
         }
     return 'User registered', 200
-    
+
 @app.get('/login')
+def show_login_form():
+    return Response('''
+        <h2>Login</h2>
+        <form method="post" action="/login">
+            <input type="text" name="username" placeholder="Username" required><br>
+            <input type="password" name="password" placeholder="Password" required><br>
+            <button type="submit">Login</button>
+        </form>
+    ''', mimetype='text/html')
+    
+@app.post('/login')
+@csrf.exempt
 def login():
-    username = request.args.get('username')
-    password = request.args.get('password')
+    username = request.args.get('username') or request.form.get('username')
+    password = request.args.get('password') or request.form.get('password')
     error = None
     user = users.get(username)
 
@@ -78,12 +100,21 @@ def login_required(view):
     
     return wrapped_view
 
+@app.get('/insecure-update')
+def show_insecure_update_form():
+    return Response('''
+        <h2>Insecure Update</h2>
+        <form method="post" action="/insecure-update">
+            <input type="password" name="new_password" placeholder="New Password" required><br>
+            <button type="submit">Update</button>
+        </form>
+    ''', mimetype='text/html')
+
 @app.post('/insecure-update')
 @login_required
 @csrf.exempt
 def insecure_update():
     new_password = request.args.get('new_password') or request.form.get('new_password')
-    error = None
     
     if not new_password:
         return 'New password is required', 400
@@ -91,13 +122,23 @@ def insecure_update():
     users[g.user['username']]['password'] = generate_password_hash(new_password, method='pbkdf2:sha256')
 
     return 'Password updated', 200
-    
+
+@app.get('/secure-update')
+def show_secure_update_form():
+    csrf_token = request.cookies.get('csrf_token', '')
+    return Response(f'''
+        <h2>Secure Update</h2>
+        <form method="post" action="/secure-update">
+            <input type="password" name="new_password" placeholder="New Password" required><br>
+            <input type="hidden" name="csrf_token" value="{csrf_token}">
+            <button type="submit">Update</button>
+        </form>
+    ''', mimetype='text/html')
 
 @app.post('/secure-update')
 @login_required
 def secure_update():
     new_password = request.args.get('new_password') or request.form.get('new_password')
-    error = None
     
     if not new_password:
         return 'New password is required', 400
@@ -118,4 +159,4 @@ def logout():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=8080, debug=True)
