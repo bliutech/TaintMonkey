@@ -30,18 +30,16 @@ SANITIZERS = ["hash_ssn"]
 SINKS = ["app.logger.info"]
 
 
-
 # Monkey patching
 #------------------------
 
-
 # Patch utility functions
 
-import dataset.cwe_200_sensitive_data_exposure.test_case01
+import dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log
 
 ##Source
-old_get = dataset.cwe_200_sensitive_data_exposure.test_case01.get_info
-@patch_function("dataset.cwe_200_sensitive_data_exposure.test_case01.get_info")
+old_get = dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log.get_info
+@patch_function("dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log.get_info")
 def new_get(key):
     returned_value = old_get(key)
     if returned_value:
@@ -50,18 +48,19 @@ def new_get(key):
 
 
 ##Sink
-old_logger = dataset.cwe_200_sensitive_data_exposure.test_case01.log_info
+old_logger = dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log.log_info
 
-@patch_function("dataset.cwe_200_sensitive_data_exposure.test_case01.log_info")
+@patch_function("dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log.log_info")
 def new_logger (message):    
     if isinstance(message, TaintedStr) and message.is_tainted():
         raise TaintException("potential vulnerability")
     return old_logger(message)
 
-## Sanitizer
-old_hash = dataset.cwe_200_sensitive_data_exposure.test_case01.hash_ssn
 
-@patch_function("dataset.cwe_200_sensitive_data_exposure.test_case01.hash_ssn")
+## Sanitizer
+old_hash = dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log.hash_ssn
+
+@patch_function("dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log.hash_ssn")
 def new_hash(key: TaintedStr):
     key.sanitize()
     return old_hash(key)
@@ -73,7 +72,7 @@ def new_hash(key: TaintedStr):
 # https://flask.palletsprojects.com/en/stable/testing/
 @pytest.fixture()
 def app():
-    from dataset.cwe_200_sensitive_data_exposure.test_case01 import app
+    from dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log import app
     register_taint_client(app)
     yield app
 
@@ -85,9 +84,6 @@ def client(app):
 def fuzzer(app):
     return DictionaryFuzzer(app, "plugins/cwe_200_sensitive_data_exposure/dictionary.txt")
 
-
-
-
 def test_taint_exception(client):
     with pytest.raises(TaintException):
         client.post("/insecure_register?ssnum=123-45-6789")
@@ -96,9 +92,6 @@ def test_no_taint_exception(client):
     # Expect no exception
     client.post("/secure_register?ssnum=123-45-6789")
 
-
-
-
 def test_fuzz(fuzzer):
 
     counter = 0
@@ -106,11 +99,9 @@ def test_fuzz(fuzzer):
         for data in inputs:
             print (f"[Fuzz Attempt {counter}] {data}")
             # Demonstrating fuzzer capabilities
-            #with pytest.raises(TaintException):
-            client.post(f"/insecure?ssnum={data}")
+            with pytest.raises(TaintException):
+                client.post("/insecure_register?ssnum="+data)
             counter += 1
-
-
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__]))
