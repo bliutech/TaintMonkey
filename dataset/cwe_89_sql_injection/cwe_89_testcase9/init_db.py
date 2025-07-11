@@ -1,7 +1,11 @@
 from flask import Flask
 from db import db, init_db
 from sqlalchemy import Column, Integer, String
+import os
 
+db_path = os.path.join('instance', 'your_database.db')
+if os.path.exists(db_path):
+    os.remove(db_path)
 
 app = Flask(__name__)
 init_db(app)
@@ -16,17 +20,12 @@ class User(db.Model):
        return f'<User {self.username}>'
 
 with app.app_context():
+   db.drop_all()
    db.create_all()
-  
-   if User.query.count() == 0:
-       admin = User(username='admin', password='adminpass')
-       user = User(username='testuser', password='password123')
-      
-       db.session.add(admin)
-       db.session.add(user)
-       db.session.commit()
-       print("Database initialized with test users.")
-   else:
-       print("Database already contains users.")
-
-print("Database setup complete!")
+   
+   admin = User(username='admin', password='adminpass')
+   user = User(username='testuser', password='password123')
+   
+   db.session.add(admin)
+   db.session.add(user)
+   db.session.commit()
