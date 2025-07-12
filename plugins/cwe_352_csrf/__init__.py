@@ -5,7 +5,8 @@
 #                    consider that if someone's app is vulnerable to CSRF, they likely don't
 #                    have any CSRF token libraries imported/in use
 
-from flask import Flask, request
+from flask import Flask, request, current_app
+from flask_wtf.csrf import CSRFProtect
 import pytest
 
 from taintmonkey import TaintException
@@ -23,6 +24,7 @@ SINKS = ["update_password"]
 # monkey patching
 
 import dataset.cwe_352_csrf.flask_wtf_post.app
+from dataset.cwe_352_csrf.flask_wtf_post.app import csrf
 
 # source
 old_get_new_password = dataset.cwe_352_csrf.flask_wtf_post.app.get_new_password
@@ -33,26 +35,31 @@ old_get_new_password = dataset.cwe_352_csrf.flask_wtf_post.app.get_new_password
 def new_get_new_password(request):
     return TaintedStr(old_get_new_password(request))
 
+
 # sanitizer
 def is_csrf_vulnerable(app: Flask, endpoint: str):
     view_func = app.view_functions.get(endpoint)
-    return "flask_wtf.csrf" not in sys.modules or getattr(view_func, "_csrf_exempt", False) 
-
-    # TODO: have to figure out how to use knowledge of whether or not an endpoint 
-    #       is csrf vulnerable to sanitize/not sanitize the new_password
-    #       * not sure if we can monkey patch insecure_update b/c we need to pass in 
-    #         a Flask object and endpoint for is_csrf_vulnerable to work
+    full_name = f"{view_func.__module__}.{view_func.__name__}"
+    is_csrf_exempt = full_name in csrf._exempt_views
+    return "flask_wtf.csrf" not in sys.modules or is_csrf_exempt 
     
+
 # sink
 old_update_password = dataset.cwe_352_csrf.flask_wtf_post.app.update_password
 
 @patch_function(
-    "dataset.cwe_352_csrf.flask_wtf_post.app.get_new_password"
+    "dataset.cwe_352_csrf.flask_wtf_post.app.update_password"
 )
 def new_update_password(new_password: TaintedStr):
-    if new_password.is_tainted():
+    endpoint = request.endpoint
+    app = current_app
+
+    # incorporating sanitizer into monkey patched sink
+    if new_password.is_tainted() and is_csrf_vulnerable(app, endpoint):
         raise TaintException("possible vulnerability")
+    new_password.sanitize()
     return old_update_password(new_password)
+
 
 
 @pytest.fixture()
