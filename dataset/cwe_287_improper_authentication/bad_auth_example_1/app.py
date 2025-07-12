@@ -133,15 +133,19 @@ def secret():
     return token_string
 
 
+#Monkey Patch
+def sign_up(username, password, user_database):
+    user_database[username] = password
+
 @app.post("/insecure/signup")
 def insecure_signup_send():
-    username = request.form.get("username")
+    username = get_username(request)
+    if not username:
+        return "No username given"
     password = request.form.get("password")
-    if username is None or password is None:
-        return "No username or no password"
-
-    #Doesn't include userTaken function, meaning someone can override another person's account
-    users[username] = password
+    if password is None:
+        return "No password given"
+    sign_up(username, password, users)
     return f'''
         {username}, you're registered!
         <form action="/login" method="get">
@@ -169,14 +173,20 @@ def insecure_signup_get():
 def user_taken(user_given, database_given):
     return user_given in database_given
 
+#Source
+def get_username(this_request):
+    return this_request.form.get("username")
 
 @app.post("/secure/signup")
 def secure_signup_send():
-    username = request.form.get("username")
+    username = get_username(request)
+    if not username:
+        return "No username given"
     password = request.form.get("password")
-    if username is None or password is None:
-        return "No username or no password"
+    if password is None:
+        return "No password given"
 
+    #Security check
     if user_taken(username, users):
         return f'''
             Username already taken!
@@ -184,7 +194,8 @@ def secure_signup_send():
                 <button type="submit">Back</button>
             </form>
         '''
-    users[username] = password
+
+    sign_up(username, password, users)
     return f'''
         {username}, you're registered!
         <form action="/login" method="get">
