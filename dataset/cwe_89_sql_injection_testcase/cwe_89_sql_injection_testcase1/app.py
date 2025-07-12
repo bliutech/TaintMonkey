@@ -1,9 +1,15 @@
 from flask import Flask, request
 from sqlalchemy import text
-from db import db, init_db
+from dataset.cwe_89_sql_injection_testcase.cwe_89_sql_injection_testcase1.db import db, init_db
 
 app = Flask(__name__)
 init_db(app)
+
+def create_insecure_user_query(username, password):
+    return text(f"INSERT INTO user (username, password) VALUES ('{username}', '{password}')")
+
+def create_secure_user_query(username, password):
+    return text("INSERT INTO user (username, password) VALUES (:username, :password)")
 
 @app.route('/insecure-signup', methods=['POST'])
 def insecure_signup():
@@ -13,10 +19,28 @@ def insecure_signup():
     if not username or not password:
         return "Username and password are required", 400
     
-    query = text(f"INSERT INTO user (username, password) VALUES ('{username}', '{password}')")
+    query = create_insecure_user_query(username, password)
     
     try:
         db.session.execute(query)
+        db.session.commit()
+        return "User created successfully", 201
+    except Exception as e:
+        db.session.rollback()
+        return f"Error creating user: {str(e)}", 500
+
+@app.route('/secure-signup', methods=['POST'])
+def secure_signup():
+    username = request.args.get('username')
+    password = request.args.get('password')
+    
+    if not username or not password:
+        return "Username and password are required", 400
+    
+    query = create_secure_user_query(username, password)
+    
+    try:
+        db.session.execute(query, {"username": username, "password": password})
         db.session.commit()
         return "User created successfully", 201
     except Exception as e:
