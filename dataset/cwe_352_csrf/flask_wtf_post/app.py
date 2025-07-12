@@ -86,7 +86,7 @@ def update_password(new_password):
     users[g.user['username']]['password'] = generate_password_hash(new_password, method='pbkdf2:sha256')
 
 @app.post('/insecure-update')
-@login_required
+# @login_required
 @csrf.exempt
 def insecure_update():
     new_password = get_new_password(request)
