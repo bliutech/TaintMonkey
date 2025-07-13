@@ -13,7 +13,7 @@ def is_safe_path(path):
     return re.match(r"^[a-zA-Z0-9_.-]+$", path)
 
 def is_safe_command(command):
-    return '&&' not in command
+    return '&' not in command
 
 
 @app.get("/secure")
@@ -26,7 +26,7 @@ def secure_handler():
     command = open_file_command(file)
     
     if not is_safe_command(command):
-        return "Invalid command detected: && operator not allowed"
+        return "Invalid command detected: & operator not allowed"
 
     safe_file = shlex.quote(file)
     safe_command = "cat {}".format(safe_file)
@@ -37,6 +37,6 @@ def secure_handler():
 if __name__ == "__main__":
     if not os.path.exists("example.txt"):
         with open("example.txt", "w") as f:
-            f.write("This is an example file.\n")
+            f.write("This is testcase6 secure example file\n")
     
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host="0.0.0.0", port=8000)
