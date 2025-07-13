@@ -3,11 +3,12 @@ from flask import Flask, request, session
 app = Flask(__name__)
 app.secret_key = "secret"
 
-# Fake user database
+# Fake user database where key is username & value is password
 users = {
-    "alice": {"password": "alice123", "token": "alice secret text"},
-    "jeff": {"password": "jeff123", "token": "jeff secret text"},
+    "alice": "alice123",
+    "jeff": "jeff123",
 }
+
 
 
 @app.post("/login")
@@ -15,11 +16,16 @@ def login_send():
     username = request.form["username"]
     password = request.form["password"]
 
-    user = users.get(username)
-    if user and user["password"] == password:
+    db_password = users.get(username)
+    if db_password and db_password == password:
         session["username"] = username
-        return f"Welcome, {username}!"
-    return "Invalid credentials"
+
+        return f'''
+            Welcome, {username}!
+        '''
+    return '''
+        Invalid credentials
+    '''
 
 
 @app.get("/login")
@@ -35,94 +41,102 @@ def login_show():
         <form action="/logout" method="post">
             <button type="submit">Logout</button>
         </form>
-        <form action="/secure/signup" method="get">
-            <button type="submit">Secure Sign Up</button>
+        <form action="/secure/reset_password" method="get">
+            <button type="submit">Secure Reset Password</button>
         </form>
-        <form action="/insecure/signup" method="get">
-            <button type="submit">Insecure Sign Up</button>
-        </form>
-        <form action="/secret" method="post">
-            <button type="submit">Open Secret Token</button>
+        <form action="/insecure/reset_password" method="get">
+            <button type="submit">Insecure Reset Password</button>
         </form>
     '''
 
+#Source
+def get_new_password(this_request):
+    return this_request.form.get("new_password")
 
-def is_user_in_session(user_string, this_session):
-    return user_string in this_session
+#Sanitizer
+def password_is_correct(old_password, db_password):
+    return old_password == db_password
 
+#Sink
+def set_new_password(password, username, user_db):
+    user_db[username] = password
 
-@app.post("/secret")
-def secret():
-    if not is_user_in_session("username", session):
-        return f"Session not logged in"
-    username = session["username"]
-
-    #This should never be true
-    if not user_taken(username, users):
-        return "this should not happen"
-    token = users[username]["token"]
-    return f"{username}'s secret token is {token}!"
-
-
-@app.post("/insecure/signup")
-def insecure_signup_send():
-    username = request.form["username"]
-    password = request.form["password"]
-    token = request.form["token"]
-
-    #Doesn't include userTaken function, meaning someone can override another person's account
-    users[username] = {"password": password, "token": token}
-    return f"{username}, registered!"
-
-@app.get("/insecure/signup")
-def insecure_signup_get():
-    return '''
-        <form action="/insecure/signup" method="post">
-            <h2>Sign Up</h2>
+@app.get("/secure/reset_password")
+def secure_reset_password_show():
+    return f'''
+        <form method="post">
+            <h2>Reset Password</h2>
             Username: <input name="username"><br>
-            Password: <input name="password" type="password"><br>
-            Secret Token: <input name="token" type="password"><br>
-            <input type="submit" value="Sign Up">
+            Old Password: <input name="old_password" type="password"><br>
+            New Password: <input name="new_password" type="password"><br>
+            <input type="submit" value="Reset">
         </form>
-        <br>
+    '''
+
+@app.post("/secure/reset_password")
+def secure_reset_password_send():
+    username = request.form.get("username")
+    if username is None:
+        return "This should not happen - no username"
+    old_password = request.form.get("old_password")
+    if old_password is None:
+        return "This should not happen - no old password"
+    new_password = get_new_password(request)
+    if new_password is None:
+        return "This should not happen - no new password"
+
+    db_password = users.get(username)
+    if db_password is None:
+        "No user in database"
+
+    if not password_is_correct(old_password, db_password):
+        return "Incorrect password - old password does not match database password"
+
+    set_new_password(new_password, username, users)
+    return f'''
+        {username}, your password is reset!
         <form action="/login" method="get">
             <button type="submit">Login</button>
         </form>
     '''
 
 
-#Monkey Patch function
-def user_taken(user, database):
-    return user in database
 
-
-@app.post("/secure/signup")
-def secure_signup_send():
-    username = request.form["username"]
-    password = request.form["password"]
-    token = request.form["token"]
-
-    if user_taken(username, users):
-        return "username already taken"
-    users[username] = {"password": password, "token": token}
-    return f"{username}, registered!"
-
-
-@app.get("/secure/signup")
-def secure_signup_get():
-    return '''
-        <form action="/secure/signup" method="post">
-            <h2>Sign Up</h2>
+@app.get("/insecure/reset_password")
+def insecure_reset_password_show():
+    return f'''
+        <form method="post">
+            <h2>Reset Password</h2>
             Username: <input name="username"><br>
-            Password: <input name="password" type="password"><br>
-            Secret Token: <input name="token" type="password"><br>
-            <input type="submit" value="Sign Up">
+            Nww Password: <input name="new_password" type="password"><br>
+            <input type="submit" value="Reset">
         </form>
-        <br>
+    '''
+
+@app.post("/insecure/reset_password")
+def insecure_reset_password_send():
+    username = request.form.get("username")
+    if username is None:
+        return "This should not happen - no username"
+    new_password = get_new_password(request)
+    if new_password is None:
+        return "THis should not happen - no new password"
+
+    db_password = users.get(username)
+    if db_password is None:
+        "No user in database"
+
+    set_new_password(new_password, username, users)
+    return f'''
+        {username}, your password is reset!
         <form action="/login" method="get">
             <button type="submit">Login</button>
         </form>
     '''
+
+#Monkey patch?
+def user_login_info_correct(username, password, database):
+    return username in database and username[username] == password
 
 
 @app.post("/logout")
@@ -132,11 +146,15 @@ def logout():
     session.clear()
     return '''
         <h2>You have been logged out.</h2>
-        <form action="/login" method="get">
-            <button type="submit">Back to Login</button>
-        </form>
     '''
 
+@app.get("/session")
+def session_show():
+    username = session.get("username")
+    if username is None:
+        return "No session"
+
+    return f"Your session is: {username}"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
