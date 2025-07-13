@@ -5,14 +5,12 @@ app = Flask(__name__)
 
 
 def open_file_command(file):
-    # Intentionally vulnerable - directly interpolates the file parameter
     return "cat {}".format(file)
 
 
 @app.get("/insecure")
 def insecure_handler():
     file = request.args.get("file") or "example.txt"
-    # Intentionally vulnerable - passes the raw command to shell
     command = open_file_command(file)
     res = os.popen(command).read()
     return res
