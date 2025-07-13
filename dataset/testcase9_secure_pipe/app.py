@@ -10,13 +10,6 @@ def open_file_command(file):
     return "cat {}".format(file)
 
 
-@app.get("/insecure")
-def insecure_handler():
-    file = request.args.get("file") or "example.txt"
-    res = os.popen(open_file_command(file)).read()
-    return res
-
-
 def is_safe_path(path):
     return re.match(r"^[a-zA-Z0-9_.-]+$", path)
 

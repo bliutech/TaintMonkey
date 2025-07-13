@@ -3,7 +3,6 @@ from flask import Flask, request
 
 app = Flask(__name__)
 
-
 def open_file_command(file):
     return "cat {}".format(file)
 
@@ -16,4 +15,8 @@ def insecure_handler():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    if not os.path.exists("example.txt"):
+        with open("example.txt", "w") as f:
+            f.write("This is an example file.\n")
+    
+    app.run(host="0.0.0.0", port=8080) 
