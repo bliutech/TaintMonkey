@@ -1,7 +1,6 @@
 # https://www.freeformatter.com/html-escape.html
 
 from flask import Flask, request
-from flask import jsonify
 import html
 
 app = Flask(__name__)
