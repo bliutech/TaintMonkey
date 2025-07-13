@@ -1,4 +1,5 @@
 from multiprocessing.sharedctypes import Value
+
 """
 TaintMonkey plugin to detect Sensitive Data Exposure.
 
@@ -31,7 +32,7 @@ SINKS = ["app.logger.info"]
 
 
 # Monkey patching
-#------------------------
+# ------------------------
 
 # Patch utility functions
 
@@ -39,19 +40,22 @@ import dataset.cwe_200_sensitive_data_exposure.hash_log.app
 
 ##Source
 old_get = dataset.cwe_200_sensitive_data_exposure.hash_log.app.get_info
+
+
 @patch_function("dataset.cwe_200_sensitive_data_exposure.hash_log.app.get_info")
 def new_get(key):
     returned_value = old_get(key)
     if returned_value:
-        return TaintedStr(returned_value) 
+        return TaintedStr(returned_value)
     return None
 
 
 ##Sink
 old_logger = dataset.cwe_200_sensitive_data_exposure.hash_log.app.log_info
 
+
 @patch_function("dataset.cwe_200_sensitive_data_exposure.hash_log.app.log_info")
-def new_logger (message):    
+def new_logger(message):
     if isinstance(message, TaintedStr) and message.is_tainted():
         raise TaintException("potential vulnerability")
     return old_logger(message)
@@ -60,50 +64,60 @@ def new_logger (message):
 ## Sanitizer
 old_hash = dataset.cwe_200_sensitive_data_exposure.hash_log.app.hash_ssn
 
+
 @patch_function("dataset.cwe_200_sensitive_data_exposure.hash_log.app.hash_ssn")
 def new_hash(key: TaintedStr):
     key.sanitize()
     return old_hash(key)
 
 
-#Pytest Functions
-#------------------------
+# Pytest Functions
+# ------------------------
+
 
 # https://flask.palletsprojects.com/en/stable/testing/
 @pytest.fixture()
 def app():
     from dataset.cwe_200_sensitive_data_exposure.hash_log.app import app
+
     register_taint_client(app)
     yield app
+
 
 @pytest.fixture()
 def client(app):
     return app.test_client()
 
+
 @pytest.fixture()
 def fuzzer(app):
-    return DictionaryFuzzer(app, "plugins/cwe_200_sensitive_data_exposure/dictionary.txt")
+    return DictionaryFuzzer(
+        app, "plugins/cwe_200_sensitive_data_exposure/dictionary.txt"
+    )
+
 
 def test_taint_exception(client):
     with pytest.raises(TaintException):
         client.post("/insecure_register?ssnum=123-45-6789")
 
+
 def test_no_taint_exception(client):
     # Expect no exception
     client.post("/secure_register?ssnum=123-45-6789")
 
-def test_fuzz(fuzzer):
 
+def test_fuzz(fuzzer):
     from urllib.parse import urlencode
 
     counter = 0
     with fuzzer.get_context() as (client, inputs):
         for data in inputs:
-            print (f"[Fuzz Attempt {counter}] {data}")
+            print(f"[Fuzz Attempt {counter}] {data}")
             # Demonstrating fuzzer capabilities
             with pytest.raises(TaintException):
                 client.post(f"/insecure_register?{urlencode({'ssnum': data})}")
             counter += 1
+
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__]))
