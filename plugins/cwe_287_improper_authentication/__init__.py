@@ -51,10 +51,8 @@ old_user_taken = (
     "dataset.cwe_287_improper_authentication.bad_auth_example_1.app.user_taken"
 )
 def new_user_taken(user_given: TaintedStr, database_given):
-    is_dirty = old_user_taken(user_given, database_given)
-    if not is_dirty:
-        user_given.sanitize()
-    return is_dirty
+    user_given.sanitize()
+    return old_user_taken(user_given, database_given)
 
 
 old_sign_up = (
