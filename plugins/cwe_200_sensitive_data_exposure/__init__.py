@@ -35,11 +35,11 @@ SINKS = ["app.logger.info"]
 
 # Patch utility functions
 
-import dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log
+import dataset.cwe_200_sensitive_data_exposure.hash_log.app
 
 ##Source
-old_get = dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log.get_info
-@patch_function("dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log.get_info")
+old_get = dataset.cwe_200_sensitive_data_exposure.hash_log.app.get_info
+@patch_function("dataset.cwe_200_sensitive_data_exposure.hash_log.app.get_info")
 def new_get(key):
     returned_value = old_get(key)
     if returned_value:
@@ -48,9 +48,9 @@ def new_get(key):
 
 
 ##Sink
-old_logger = dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log.log_info
+old_logger = dataset.cwe_200_sensitive_data_exposure.hash_log.app.log_info
 
-@patch_function("dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log.log_info")
+@patch_function("dataset.cwe_200_sensitive_data_exposure.hash_log.app.log_info")
 def new_logger (message):    
     if isinstance(message, TaintedStr) and message.is_tainted():
         raise TaintException("potential vulnerability")
@@ -58,9 +58,9 @@ def new_logger (message):
 
 
 ## Sanitizer
-old_hash = dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log.hash_ssn
+old_hash = dataset.cwe_200_sensitive_data_exposure.hash_log.app.hash_ssn
 
-@patch_function("dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log.hash_ssn")
+@patch_function("dataset.cwe_200_sensitive_data_exposure.hash_log.app.hash_ssn")
 def new_hash(key: TaintedStr):
     key.sanitize()
     return old_hash(key)
@@ -72,7 +72,7 @@ def new_hash(key: TaintedStr):
 # https://flask.palletsprojects.com/en/stable/testing/
 @pytest.fixture()
 def app():
-    from dataset.cwe_200_sensitive_data_exposure.hash_example1.ssn_hash_log import app
+    from dataset.cwe_200_sensitive_data_exposure.hash_log.app import app
     register_taint_client(app)
     yield app
 
@@ -94,13 +94,15 @@ def test_no_taint_exception(client):
 
 def test_fuzz(fuzzer):
 
+    from urllib.parse import urlencode
+
     counter = 0
     with fuzzer.get_context() as (client, inputs):
         for data in inputs:
             print (f"[Fuzz Attempt {counter}] {data}")
             # Demonstrating fuzzer capabilities
             with pytest.raises(TaintException):
-                client.post("/insecure_register?ssnum="+data)
+                client.post(f"/insecure_register?{urlencode({'ssnum': data})}")
             counter += 1
 
 if __name__ == "__main__":
