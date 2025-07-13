@@ -15,7 +15,6 @@ def insecure_handler():
     res = os.popen(open_file_command(file)).read()
     return res
 
-
 def is_safe_path(path):
     return re.match(r"^[a-zA-Z0-9_.-]+$", path)
 
