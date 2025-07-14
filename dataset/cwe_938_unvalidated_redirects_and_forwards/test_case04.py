@@ -1,5 +1,4 @@
 from flask import Flask, request, redirect
-import urllib.parse
 
 app = Flask(__name__)
 
@@ -17,19 +16,17 @@ def validated_redirect():
     if not redirect_url:
         return "No URL provided", 400
     
-    if whitelist_validate(redirect_url):
+    if safe (redirect_url):
         return redirect(redirect_url)
 
     return "Invalid redirect URL", 400
 
-#Whitelist validation
-def whitelist_validate(input_url):
-    from urllib.parse import urlparse
+#furl used to sanitize url scheme
+def safe(url):
+    from furl import furl
+    furled=furl(url)
 
-    parsed = urlparse(input_url)
-    whitelist_paths = ["/allowed", "/safe", "/home"]
-
-    return parsed.path in whitelist_paths
+    return furled.scheme == "https" or furled.scheme == "http"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)

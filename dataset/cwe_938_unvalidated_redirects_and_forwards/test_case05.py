@@ -1,5 +1,4 @@
 from flask import Flask, request, redirect
-import urllib.parse
 
 app = Flask(__name__)
 
@@ -17,18 +16,19 @@ def validated_redirect():
     if not redirect_url:
         return "No URL provided", 400
     
-    if regex(redirect_url):
+    if safe (redirect_url):
         return redirect(redirect_url)
 
     return "Invalid redirect URL", 400
 
-#Regex validation
-def regex(input_url):
-    import re
+#urllib used to sanitize url domain
+def safe(url):
+    from furl import furl
+    furled = furl(url)
 
-    regex_pattern = re.compile(r'^\/[a-zA-Z0-9_\-\/]*$')
-
-    return bool(regex_pattern.match(input_url))
+    allowed_domains = {"allowed.com", "safe.com", "secure.com"}
+    
+    return furled.host in allowed_domains
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)

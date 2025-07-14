@@ -1,5 +1,4 @@
 from flask import Flask, request, redirect
-import urllib.parse
 
 app = Flask(__name__)
 
@@ -12,28 +11,30 @@ def unvalidated_redirect():
 
 @app.route("/validated_redirect", methods=["GET"])
 def validated_redirect():
-    redirect_token = request.args.get("url")
+    redirect_url = request.args.get("url")
 
-    if not redirect_token:
-        return "No URL token provided", 400
+    if not redirect_url:
+        return "No URL provided", 400
     
-    if is_token (redirect_token):
-        return redirect(token_list[redirect_token])
+    if safe(redirect_url):
+        return redirect(redirect_url)
 
-    return "Invalid redirect token", 400
+    return "Invalid redirect URL", 400
 
-token_list = {
-        "allowed": "/allowed",
-        "safe": "/safe",
-        "home": "/home"
-    }
+#urllib used to sanitize url path
+def safe(url):
+    from furl import furl
+    furled = furl (url)
 
-#Token Validation
-def is_token(input_token):
+    safe_paths = {"safe", "secure", "allowed"}
+    path_segments = furled.path.segments
+    ##returns list of paths
+    ##furl(bliu.com/hi/benson) --> {"hi","benson"}
 
-    if input_token in token_list:
-        return True 
-    
+    for path in path_segments:
+        if path in safe_paths:
+            return True
+        
     return False
 
 if __name__ == "__main__":
