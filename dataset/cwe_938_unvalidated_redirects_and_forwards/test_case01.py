@@ -17,17 +17,19 @@ def validated_redirect():
     if not redirect_url:
         return "No URL provided", 400
     
-    if allowed_domain (redirect_url):
+    if safe (redirect_url):
         return redirect(redirect_url)
 
     return "Invalid redirect URL", 400
 
-#Same origin validation
-def allowed_domain(url):
+#urllib used to sanitize url scheme
+def safe(url):
+
     from urllib.parse import urlparse
-    domain = "allowed.com"
-    parsed_url = urlparse(url)
-    return parsed_url.netloc == domain
+
+    parsed_url=urlparse(url)
+
+    return parsed_url.scheme == "http" or parsed_url.scheme == "https"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)

@@ -17,19 +17,20 @@ def validated_redirect():
     if not redirect_url:
         return "No URL provided", 400
     
-    if scheme_validate(redirect_url):
+    if safe(redirect_url):
         return redirect(redirect_url)
 
     return "Invalid redirect URL", 400
 
-#Scheme validation
-def scheme_validate(input_url):
-    from urllib.parse import urlparse
+#urllib used to sanitize url path
+def safe(url):
 
-    parsed = urlparse(input_url)
-    schemes = ["http", "https", ""]
+    from urllib.parse import urlparse,urljoin
 
-    return parsed.scheme in schemes
+    parsed_url=urlparse(url)
+    safe_paths = {"/safe", "/secure", "/allowed"}
+
+    return parsed_url.path in safe_paths
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)

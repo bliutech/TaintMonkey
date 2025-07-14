@@ -17,19 +17,20 @@ def validated_redirect():
     if not redirect_url:
         return "No URL provided", 400
     
-    if canonicalize (redirect_url):
+    if safe (redirect_url):
         return redirect(redirect_url)
 
     return "Invalid redirect URL", 400
 
-#Canonicalization validation
-def canonicalize(input_url):
-    from urllib.parse import urlparse, urljoin
-    base_url = "allowed.com"
+#urllib used to sanitize url domain
+def safe(url):
 
-    joined_url = urljoin(base_url, input_url)
+    from urllib.parse import urlparse
 
-    return urlparse(joined_url).netloc == urlparse(base_url).netloc
+    parsed_url=urlparse(url)
+    allowed_domains = {"allowed.com", "safe.com", "secure.com"}
+
+    return parsed_url.netloc in allowed_domains
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
