@@ -18,6 +18,15 @@ def example_sanitizer(this_string, gurt="yo"):
     else:
         return this_string
 
+def example_yo(this_string, gurt="yo"):
+    if this_string == "Yo":
+        return "Gurt"
+    else:
+        return this_string
+
+def run_example():
+    example_yo("hi")
+
 
 @dynamic_test.sink()
 def example_sink(important_string):

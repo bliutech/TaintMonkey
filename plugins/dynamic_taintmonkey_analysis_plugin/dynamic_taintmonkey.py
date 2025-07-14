@@ -21,7 +21,8 @@ from taintmonkey.fuzzer import DictionaryFuzzer
 from taintmonkey.taint import TaintedStr
 from taintmonkey.patch import patch_function
 
-import test_app
+# Add this to your test file
+from taintmonkey.patch import patch_function
 
 
 class DynamicTaintMonkey:
@@ -134,11 +135,57 @@ class DynamicTaintMonkey:
 
     # TODO Non functional as of right now - I want to change this functionally
     def monkey_patch_sanitizers(self):
+        def create_patched_sanitizer(original_func, func_name):
+            def patched_sanitizer(*args, **kwargs):
+                print(f"GURT! Patched {func_name}")
+                result = original_func(*args, **kwargs)
+                return TaintedStr(result)
+
+            return patched_sanitizer
+
         for func_name in self._sanitizers:
-            func = self._sanitizers[func_name]
+            # Get the original function (not the wrapper)
+            original_func = self._sanitizers[func_name]
             func_path = self.get_formatted_path(func_name, self._sanitizers)
 
-            @patch_function(func_path)
-            def patched_sanitizer(*args, **kwargs):
-                print("GURT!")
-                return TaintedStr(func(*args, **kwargs))
+            print(f"DEBUG: Attempting to patch {func_name}")
+            print(f"DEBUG: Function path: {func_path}")
+            print(f"DEBUG: Original function: {original_func}")
+
+            # Check what's currently in the module BEFORE patching
+            module_name, fn_name = func_path.rsplit('.', 1)
+            import importlib
+            module = importlib.import_module(module_name)
+            current_func = getattr(module, fn_name)
+            print(f"DEBUG: Current function in module BEFORE patch: {current_func}")
+
+            # Create the patched function
+            patched_func = create_patched_sanitizer(original_func, func_name)
+            print(f"DEBUG: Created patched function: {patched_func}")
+
+            # Apply the patch
+            try:
+                patch_function(func_path)(patched_func)
+                print(f"DEBUG: patch_function call completed successfully")
+            except Exception as e:
+                print(f"DEBUG: patch_function call failed: {e}")
+                continue
+
+            # Check what's in the module AFTER patching
+            # Re-import to get fresh reference
+            importlib.reload(module)
+            module = importlib.import_module(module_name)
+            patched_in_module = getattr(module, fn_name)
+            print(f"DEBUG: Function in module AFTER patch: {patched_in_module}")
+            print(f"DEBUG: Are they the same? {patched_in_module is patched_func}")
+
+            # Test calling it directly
+            print(f"DEBUG: Testing direct call to patched function...")
+            try:
+                test_result = patched_in_module("test_input")
+                print(f"DEBUG: Direct call result: {test_result}, type: {type(test_result)}")
+            except Exception as e:
+                print(f"DEBUG: Direct call failed: {e}")
+
+            print(f"DEBUG: Finished processing {func_name}")
+            print("-" * 50)
