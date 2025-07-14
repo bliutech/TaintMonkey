@@ -79,22 +79,17 @@ def login_required(view):
     
     return wrapped_view
 
-def get_new_password(request):
-    return request.args.get('new_password') or request.form.get('new_password')
-
-def update_password(new_password):
-    users[g.user['username']]['password'] = generate_password_hash(new_password, method='pbkdf2:sha256')
 
 @app.post('/insecure-update')
-# @login_required
+@login_required
 @csrf.exempt
 def insecure_update():
-    new_password = get_new_password(request)
+    new_password = request.args.get('new_password') or request.form.get('new_password')
     
     if not new_password:
         return 'New password is required', 400
 
-    update_password(new_password)
+    users[g.user['username']]['password'] = generate_password_hash(new_password, method='pbkdf2:sha256')
     return 'Password updated', 200
     
 
