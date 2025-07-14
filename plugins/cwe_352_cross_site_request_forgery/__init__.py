@@ -16,8 +16,8 @@ SINKS = []
 
 # monkey patching
 
-import dataset.cwe_352_csrf.flask_wtf_post.app
-from dataset.cwe_352_csrf.flask_wtf_post.app import csrf
+import dataset.cwe_352_cross_site_request_forgery.flask_wtf_post.app
+from dataset.cwe_352_cross_site_request_forgery.flask_wtf_post.app import csrf
 
 
 # # sanitizer
@@ -28,11 +28,13 @@ def is_csrf_vulnerable(app: Flask, endpoint: str):
     return "flask_wtf.csrf" not in sys.modules or is_csrf_exempt
 
 
-old_insecure_update = dataset.cwe_352_csrf.flask_wtf_post.app.insecure_update
+old_insecure_update = (
+    dataset.cwe_352_cross_site_request_forgery.flask_wtf_post.app.insecure_update
+)
 
 
 @csrf.exempt
-@dataset.cwe_352_csrf.flask_wtf_post.app.login_required
+@dataset.cwe_352_cross_site_request_forgery.flask_wtf_post.app.login_required
 def new_insecure_update():
     endpoint = request.endpoint
     app = current_app
@@ -42,14 +44,14 @@ def new_insecure_update():
     return old_insecure_update()
 
 
-dataset.cwe_352_csrf.flask_wtf_post.app.app.view_functions["insecure_update"] = (
-    new_insecure_update
-)
+dataset.cwe_352_cross_site_request_forgery.flask_wtf_post.app.app.view_functions[
+    "insecure_update"
+] = new_insecure_update
 
 
 @pytest.fixture()
 def app():
-    from dataset.cwe_352_csrf.flask_wtf_post.app import app
+    from dataset.cwe_352_cross_site_request_forgery.flask_wtf_post.app import app
 
     register_taint_client(app)
 
@@ -63,7 +65,9 @@ def client(app):
 
 @pytest.fixture()
 def fuzzer(app):
-    return DictionaryFuzzer(app, "plugins/cwe_352_csrf/dictionary.txt")
+    return DictionaryFuzzer(
+        app, "plugins/cwe_352_cross_site_request_forgery/dictionary.txt"
+    )
 
 
 def test_fuzz(app, fuzzer):
