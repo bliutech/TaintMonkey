@@ -6,8 +6,8 @@ Meant to dynamically test flask applications without having to manually monkey p
 Seeks to automatically taint and fuzz via the user of @source, @sanitizer, and @sink decorators
 """
 
-#TODO: I want to implement a live monkey patching algorithm that tries to find functions that look like they might be
-#TODO: user input.
+# TODO: I want to implement a live monkey patching algorithm that tries to find functions that look like they might be
+# TODO: user input.
 
 import inspect
 import os
@@ -25,7 +25,6 @@ import test_app
 
 
 class DynamicTaintMonkey:
-
     def __init__(self):
         self._sources = dict()
         self._sanitizers = dict()
@@ -46,25 +45,26 @@ class DynamicTaintMonkey:
         return self._sources
 
     def sanitizer(self, sanitizer_type="verify"):
-
         def decorator(func):
             self._sanitizers[func.__name__] = func
 
-            def wrapper(*args, **kwargs):  # IMPORTANT - the first args should be the tainted string
-
-                #Check argument length
+            def wrapper(
+                *args, **kwargs
+            ):  # IMPORTANT - the first args should be the tainted string
+                # Check argument length
                 if not len(args) > 0:
                     raise ValueError("sanitizer - no args passed")
                 tainted_string = args[0]
 
-                #Check type
-                if  isinstance(tainted_string, str):
+                # Check type
+                if isinstance(tainted_string, str):
                     tainted_string = TaintedStr(tainted_string)
                 elif not isinstance(tainted_string, TaintedStr):
-                    raise ValueError("sanitizer - first argument is not a tainted string")
+                    raise ValueError(
+                        "sanitizer - first argument is not a tainted string"
+                    )
 
-
-                #Sanitize
+                # Sanitize
                 if sanitizer_type == "verify":
                     tainted_string.sanitize()
                     return func(*args, **kwargs)
@@ -80,9 +80,7 @@ class DynamicTaintMonkey:
     def get_sanitizers(self):
         return self._sanitizers
 
-
     def sink(self, bar="sigma"):
-
         def decorator(func):
             self._sinks[func.__name__] = func
 
@@ -90,7 +88,9 @@ class DynamicTaintMonkey:
                 if not len(args) > 0:
                     raise ValueError("sanitizer - no args passed")
                 if not isinstance(args[0], TaintedStr):
-                    raise ValueError("sanitizer - first argument is not a tainted string")
+                    raise ValueError(
+                        "sanitizer - first argument is not a tainted string"
+                    )
                 tainted_string = args[0]
                 if tainted_string.is_tainted():
                     raise TaintException("potential vulnerability")
@@ -109,15 +109,19 @@ class DynamicTaintMonkey:
         if func is None:
             raise ValueError(f"Function {func_name} not found in dictionary")
         func_path = inspect.getsourcefile(func)
-        working_dir = os.getcwd()  # Should be the parent TaintMonkey dir of the repo, otherwise fix
-        relative_to_working_dir = Path(func_path).relative_to(Path(working_dir)).with_suffix("")
+        working_dir = (
+            os.getcwd()
+        )  # Should be the parent TaintMonkey dir of the repo, otherwise fix
+        relative_to_working_dir = (
+            Path(func_path).relative_to(Path(working_dir)).with_suffix("")
+        )
         func_path = ""  # Reset so we can correctly format
         for part in relative_to_working_dir.parts:
             func_path += part + "."
         func_path += func_name
         return func_path
 
-    #TODO Non functional as of right now - I want to change this functionally
+    # TODO Non functional as of right now - I want to change this functionally
     def monkey_patch_sources(self):
         for func_name in self._sources:
             func = self._sources[func_name]
@@ -128,7 +132,7 @@ class DynamicTaintMonkey:
                 print("GURT!")
                 return TaintedStr(func(*args, **kwargs))
 
-    #TODO Non functional as of right now - I want to change this functionally
+    # TODO Non functional as of right now - I want to change this functionally
     def monkey_patch_sanitizers(self):
         for func_name in self._sanitizers:
             func = self._sanitizers[func_name]
