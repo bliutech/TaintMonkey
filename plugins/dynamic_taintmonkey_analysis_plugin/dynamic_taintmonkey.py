@@ -5,6 +5,10 @@ Meant to dynamically test flask applications without having to manually monkey p
 
 Seeks to automatically taint and fuzz via the user of @source, @sanitizer, and @sink decorators
 """
+
+#TODO: I want to implement a live monkey patching algorithm that tries to find functions that look like they might be
+#TODO: user input.
+
 import inspect
 import os
 from pathlib import Path
@@ -17,6 +21,8 @@ from taintmonkey.fuzzer import DictionaryFuzzer
 from taintmonkey.taint import TaintedStr
 from taintmonkey.patch import patch_function
 
+import test_app
+
 
 class DynamicTaintMonkey:
 
@@ -28,18 +34,43 @@ class DynamicTaintMonkey:
     def source(self, func):
         self._sources[func.__name__] = func
         def wrapper(*args, **kwargs):
-            return func(*args, **kwargs)
+            return TaintedStr(func(*args, **kwargs))
         return wrapper
 
     def get_sources(self):
         return self._sources
 
-    def sanitizer(self, func):
-        print("HELLO")
-        self._sanitizers[func.__name__] = func
-        def wrapper(*args, **kwargs):
-            return func(*args, **kwargs)
-        return wrapper
+    def sanitizer(self, sanitizer_type="verify"):
+
+        def decorator(func):
+            self._sanitizers[func.__name__] = func
+
+            def wrapper(*args, **kwargs):  # IMPORTANT - the first args should be the tainted string
+
+                #Check argument length
+                if not len(args) > 0:
+                    raise ValueError("sanitizer - no args passed")
+                tainted_string = args[0]
+
+                #Check type
+                if  isinstance(tainted_string, str):
+                    tainted_string = TaintedStr(tainted_string)
+                elif not isinstance(tainted_string, TaintedStr):
+                    raise ValueError("sanitizer - first argument is not a tainted string")
+
+
+                #Sanitize
+                if sanitizer_type == "verify":
+                    tainted_string.sanitize()
+                    return func(*args, **kwargs)
+                else:  # TODO: Add more types of sanitizers, right now this is the "sanitizer" type
+                    new_tainted_string = TaintedStr(func(*args, **kwargs))
+                    new_tainted_string.sanitize()
+                    return new_tainted_string
+
+            return wrapper
+
+        return decorator
 
     def get_sanitizers(self):
         return self._sanitizers
@@ -48,6 +79,13 @@ class DynamicTaintMonkey:
     def sink(self, func):
         self._sinks[func.__name__] = func
         def wrapper(*args, **kwargs):
+            if not len(args) > 0:
+                raise ValueError("sanitizer - no args passed")
+            if not isinstance(args[0], TaintedStr):
+                raise ValueError("sanitizer - first argument is not a tainted string")
+            tainted_string = args[0]
+            if tainted_string.is_tainted():
+                raise TaintException("potential vulnerability")
             return func(*args, **kwargs)
         return wrapper
 
@@ -68,29 +106,24 @@ class DynamicTaintMonkey:
         func_path += func_name
         return func_path
 
-    #TODO Non functional as of right now
+    #TODO Non functional as of right now - I want to change this functionally
     def monkey_patch_sources(self):
         for func_name in self._sources:
             func = self._sources[func_name]
             func_path = self.get_formatted_path(func_name, self._sources)
 
-            def make_patched_source(original_func):
-                print(func_path)
-                @patch_function(func_path)
-                def patched_source(*args, **kwargs):
-                    print("GURT!")
-                    return TaintedStr(original_func(*args, **kwargs))
-                return patched_source
+            @patch_function(func_path)
+            def patched_source(*args, **kwargs):
+                print("GURT!")
+                return TaintedStr(func(*args, **kwargs))
 
-            make_patched_source(func)()
-
-    #TODO Non functional as of right now
+    #TODO Non functional as of right now - I want to change this functionally
     def monkey_patch_sanitizers(self):
         for func_name in self._sanitizers:
             func = self._sanitizers[func_name]
             func_path = self.get_formatted_path(func_name, self._sanitizers)
 
             @patch_function(func_path)
-            def patched_source(*args, **kwargs):
+            def patched_sanitizer(*args, **kwargs):
                 print("GURT!")
                 return TaintedStr(func(*args, **kwargs))
