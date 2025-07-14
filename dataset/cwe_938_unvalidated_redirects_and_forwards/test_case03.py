@@ -1,5 +1,5 @@
 from flask import Flask, request, redirect
-import urllib.parse
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 
@@ -17,20 +17,24 @@ def validated_redirect():
     if not redirect_url:
         return "No URL provided", 400
     
-    if safe(redirect_url):
+    if safe (redirect_url):
         return redirect(redirect_url)
 
     return "Invalid redirect URL", 400
 
-#urllib used to sanitize url path
+#urllib used to prevent open redirects via hostname tricks
+
 def safe(url):
-
-    from urllib.parse import urlparse,urljoin
-
     parsed_url=urlparse(url)
-    safe_paths = {"/safe", "/secure", "/allowed"}
 
-    return parsed_url.path in safe_paths
+    domains = {"www.allowed.com","www.safe.com", "www.secure.com"}
+    hostname = parsed_url.hostname
+    hostname = hostname.lower().strip('.')
+
+    #hostname tricks like url=https://safe.com@unsafe.org won't work
+    #hostname.lower().strip('.') returns only the hostname, unsafe.org ^
+
+    return hostname in domains
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
