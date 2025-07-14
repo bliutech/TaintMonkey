@@ -1,0 +1,14 @@
+test
+hacked&csrf_token=myCsrfToken
+None
+newpassword123
+csrfattack
+hacked&csrf_token=anything
+hacked%0aSet-Cookie:session=mySession
+admin&csrf_token=myCsrfToken
+csrf_token=hacked
+%0A%0Dcsrf_token=hacked
+password=supersecure
+123456
+null
+hacked&extra=1
