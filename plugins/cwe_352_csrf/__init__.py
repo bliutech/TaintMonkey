@@ -6,7 +6,7 @@ from taintmonkey import TaintException
 from taintmonkey.client import register_taint_client
 from taintmonkey.fuzzer import DictionaryFuzzer
 from taintmonkey.taint import TaintedStr
-from taintmonkey.patch import patch_function, patch_route_handler
+from taintmonkey.patch import patch_function
 
 import sys
 
@@ -28,9 +28,6 @@ def is_csrf_vulnerable(app: Flask, endpoint: str):
 
 
 old_insecure_update = dataset.cwe_352_csrf.flask_wtf_post.app.insecure_update
-@patch_function(
-    "dataset.cwe_352_csrf.flask_wtf_post.app.insecure_update"
-)
 @csrf.exempt
 @dataset.cwe_352_csrf.flask_wtf_post.app.login_required
 def new_insecure_update():
