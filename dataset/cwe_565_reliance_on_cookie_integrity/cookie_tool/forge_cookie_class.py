@@ -7,15 +7,17 @@ from itsdangerous import BadSignature
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
+
 class CustomSessionInterface(SecureCookieSessionInterface):
     def get_signing_serializer(self, app):
         return super().get_signing_serializer(app)
 
 
 class Cookie_Forger:
-
     @staticmethod
-    def generate_cookie_admin(session_id = secrets.token_bytes(32), secret_key = "supersecretkey"):
+    def generate_cookie_admin(
+        session_id=secrets.token_bytes(32), secret_key="supersecretkey"
+    ):
         app.secret_key = secret_key
         session_serializer = CustomSessionInterface().get_signing_serializer(app)
 
@@ -29,7 +31,7 @@ class Cookie_Forger:
         return cookie
 
     @staticmethod
-    def generate_cookie(username, role, session_id, secret_key = "supersecretkey"):
+    def generate_cookie(username, role, session_id, secret_key="supersecretkey"):
         if not isinstance(secret_key, str):
             raise TypeError("secret_key must be str")
         app.secret_key = secret_key
@@ -54,7 +56,7 @@ class Cookie_Forger:
             return f"Bad signature or invalid cookie: {e}"
 
         # timestamp is datetime.datetime, format it directly
-        created_time = timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        created_time = timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
         return {
             "timestamp": timestamp,

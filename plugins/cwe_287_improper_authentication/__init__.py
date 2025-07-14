@@ -37,6 +37,8 @@ import dataset.cwe_287_improper_authentication.bad_auth_example_1.app
 old_get_username = (
     dataset.cwe_287_improper_authentication.bad_auth_example_1.app.get_username
 )
+
+
 @patch_function(
     "dataset.cwe_287_improper_authentication.bad_auth_example_1.app.get_username"
 )
@@ -47,6 +49,8 @@ def new_get_username(this_request):
 old_user_taken = (
     dataset.cwe_287_improper_authentication.bad_auth_example_1.app.user_taken
 )
+
+
 @patch_function(
     "dataset.cwe_287_improper_authentication.bad_auth_example_1.app.user_taken"
 )
@@ -55,9 +59,9 @@ def new_user_taken(user_given: TaintedStr, database_given):
     return old_user_taken(user_given, database_given)
 
 
-old_sign_up = (
-    dataset.cwe_287_improper_authentication.bad_auth_example_1.app.sign_up
-)
+old_sign_up = dataset.cwe_287_improper_authentication.bad_auth_example_1.app.sign_up
+
+
 @patch_function(
     "dataset.cwe_287_improper_authentication.bad_auth_example_1.app.sign_up"
 )
@@ -85,36 +89,42 @@ def client(app):
 @pytest.fixture()
 def insecure_fuzzer(app):
     # Corpus from https://hacktricks.boitatech.com.br/pentesting-web/command-injection
-    return DictionaryFuzzer(app, "plugins/cwe_287_improper_authentication/insecure_dictionary.txt")
+    return DictionaryFuzzer(
+        app, "plugins/cwe_287_improper_authentication/insecure_dictionary.txt"
+    )
+
 
 @pytest.fixture()
 def secure_fuzzer(app):
     # Corpus from https://hacktricks.boitatech.com.br/pentesting-web/command-injection
-    return DictionaryFuzzer(app, "plugins/cwe_287_improper_authentication/secure_dictionary.txt")
+    return DictionaryFuzzer(
+        app, "plugins/cwe_287_improper_authentication/secure_dictionary.txt"
+    )
 
 
 def test_taint_exception(client):
     with pytest.raises(TaintException):
-        client.post("/insecure/signup",
+        client.post(
+            "/insecure/signup",
             data={
-                'username': 'alice',
-                'password': 'alice123',
-            }
+                "username": "alice",
+                "password": "alice123",
+            },
         )
 
 
 def test_no_taint_exception(client):
     # Expect no exception
-    client.post("/secure/signup",
-                data={
-                    'username': 'alice',
-                    'password': 'alice123',
-                }
+    client.post(
+        "/secure/signup",
+        data={
+            "username": "alice",
+            "password": "alice123",
+        },
     )
 
 
 def test_insecure_fuzz(insecure_fuzzer):
-
     print("\n\nInsecure Fuzz Start")
     counter = 0
     with insecure_fuzzer.get_context() as (client, inputs):
@@ -122,29 +132,30 @@ def test_insecure_fuzz(insecure_fuzzer):
             print(f"[Fuzz Attempt {counter}] {data}")
             # Demonstrating fuzzer capabilities
             with pytest.raises(TaintException):
-                client.post("/insecure/signup",
-                            data={
-                                'username': data,
-                                'password': "takeover_password",
-                            }
+                client.post(
+                    "/insecure/signup",
+                    data={
+                        "username": data,
+                        "password": "takeover_password",
+                    },
                 )
             counter += 1
     print("Insecure Fuzz Finished")
 
 
 def test_secure_fuzz(secure_fuzzer):
-
     print("\n\nSecure Fuzz Start")
     counter = 0
     with secure_fuzzer.get_context() as (client, inputs):
         for data in inputs:
             print(f"[Fuzz Attempt {counter}] {data}")
             # Demonstrating fuzzer capabilities
-            client.post("/secure/signup",
-                        data={
-                            'username': data,
-                            'password': "takeover_password",
-                        }
+            client.post(
+                "/secure/signup",
+                data={
+                    "username": data,
+                    "password": "takeover_password",
+                },
             )
             counter += 1
     print("Secure Fuzz Finished")

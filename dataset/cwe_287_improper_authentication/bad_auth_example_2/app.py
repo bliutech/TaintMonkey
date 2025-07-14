@@ -12,7 +12,7 @@ users = {
 
 @app.get("/insecure/login")
 def insecure_login_show():
-    return '''
+    return """
         <form method="post">
             <h2>Login</h2>
             Username: <input name="username"><br>
@@ -23,7 +23,7 @@ def insecure_login_show():
         <form action="/logout" method="post">
             <button type="submit">Logout</button>
         </form>
-    '''
+    """
 
 
 @app.post("/insecure/login")
@@ -32,7 +32,6 @@ def insecure_login_send():
     password = request.form.get("password")
     if username is None or password is None:
         return "Error - no username or no password"
-
 
     db_password = users.get(username)
     if db_password is None:
@@ -58,7 +57,7 @@ def insecure_set_session():
 
 @app.get("/secure/login")
 def secure_login_show():
-    return '''
+    return """
         <form method="post">
             <h2>Login</h2>
             Username: <input name="username"><br>
@@ -69,7 +68,7 @@ def secure_login_show():
         <form action="/logout" method="post">
             <button type="submit">Logout</button>
         </form>
-    '''
+    """
 
 
 @app.post("/secure/login")
@@ -86,7 +85,7 @@ def secure_login_send():
     return "Invalid credentials"
 
 
-#Monkey patch?
+# Monkey patch?
 def user_login_info_correct(username, password, database):
     return username in database and username[username] == password
 
@@ -96,12 +95,13 @@ def logout():
     if not session:
         return "No Session"
     session.clear()
-    return '''
+    return """
         <h2>You have been logged out.</h2>
         <form action="/insecure/login" method="get">
             <button type="submit">Back to Login</button>
         </form>
-    '''
+    """
+
 
 @app.get("/session")
 def session_show():
@@ -110,6 +110,7 @@ def session_show():
         return "No session"
 
     return f"Your session is: {username}"
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
