@@ -2,6 +2,12 @@
 Dynamic taint analysis of Python web applications using monkey patching.
 
 ## Development
+We use `ruff` to check the formatting of our code so before submitting a Pull Request, make sure to run the formatter using the following command.
+
+```
+python -m ruff format --no-cache
+```
+
 To run the unit test suite, use the following command.
 
 ```
