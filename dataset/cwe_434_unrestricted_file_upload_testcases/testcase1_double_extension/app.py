@@ -26,8 +26,8 @@ def secure_file_validation(filename, file_content):
     for magic, ext in magic_numbers.items():
         if file_content.startswith(magic):
             return filename.rsplit('.', 1)[1].lower() == ext
-    return False  # Return False if no magic numbers match
-
+    return False
+        
 @app.route('/upload/insecure', methods=['POST'])
 def insecure_upload():
     if 'file' not in request.files:
@@ -37,7 +37,7 @@ def insecure_upload():
     if file.filename == '':
         return 'No selected file', 400
     
-    if allowed_file(file.filename):  # Fixed typo in filename
+    if allowed_file(file.filename):
         filename = secure_filename(file.filename)
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         return 'File uploaded successfully', 200
@@ -61,7 +61,7 @@ def secure_upload():
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         return 'File uploaded successfully', 200
     
-    return 'Invalid file type or content', 400  # Fixed typo in error message
+    return 'Invalid file type or content', 400
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
