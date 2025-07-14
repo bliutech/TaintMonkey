@@ -4,14 +4,17 @@ Dynamic TaintMonkey Analysis Plugin
 Meant to dynamically test flask applications without having to manually monkey patch and fuzz
 
 Seeks to automatically taint and fuzz via the user of @source, @sanitizer, and @sink decorators
+
+CWD (Current Working Directory) should be TaintMonkey (parent of plugins)
 """
 
-# TODO: I want to implement a live monkey patching algorithm that tries to find functions that look like they might be
-# TODO: user input.
+#TODO: I want to implement a live monkey patching algorithm that tries to find functions that look like they might be
+#TODO: user input. Also, I need to implement a pytest fixture that generates a fuzzer harness
 
 import inspect
 import os
 from pathlib import Path
+import importlib
 
 import pytest
 
@@ -26,6 +29,7 @@ from taintmonkey.patch import patch_function
 
 
 class DynamicTaintMonkey:
+
     def __init__(self):
         self._sources = dict()
         self._sanitizers = dict()
@@ -122,8 +126,25 @@ class DynamicTaintMonkey:
         func_path += func_name
         return func_path
 
-    # TODO Non functional as of right now - I want to change this functionally
+    @staticmethod
+    def get_function_from_path(func_path: str):
+        """Get a function from a dot-separated path string"""
+        # Split the path into module and function parts
+        path_parts = func_path.split('.')
+        module_path = '.'.join(path_parts[:-1])  # Everything except the last part
+        func_name = path_parts[-1]  # The last part is the function name
+
+        # Import the module
+        module = importlib.import_module(module_path)
+
+        # Get the function from the module
+        function = getattr(module, func_name)
+
+        return function
+
+    # TODO Functional, just don't know how to implement
     def monkey_patch_sources(self):
+
         for func_name in self._sources:
             func = self._sources[func_name]
             func_path = self.get_formatted_path(func_name, self._sources)
@@ -131,61 +152,29 @@ class DynamicTaintMonkey:
             @patch_function(func_path)
             def patched_source(*args, **kwargs):
                 print("GURT!")
-                return TaintedStr(func(*args, **kwargs))
+                return func(*args, **kwargs) #THIS DOESN'T REALLY DO ANYTHING YET, INFRASTRUCTURE BUILT
 
-    # TODO Non functional as of right now - I want to change this functionally
+    # TODO Functional, just don't know how to implement
     def monkey_patch_sanitizers(self):
-        def create_patched_sanitizer(original_func, func_name):
-            def patched_sanitizer(*args, **kwargs):
-                print(f"GURT! Patched {func_name}")
-                result = original_func(*args, **kwargs)
-                return TaintedStr(result)
-
-            return patched_sanitizer
 
         for func_name in self._sanitizers:
-            # Get the original function (not the wrapper)
-            original_func = self._sanitizers[func_name]
+            func = self._sanitizers[func_name]
             func_path = self.get_formatted_path(func_name, self._sanitizers)
 
-            print(f"DEBUG: Attempting to patch {func_name}")
-            print(f"DEBUG: Function path: {func_path}")
-            print(f"DEBUG: Original function: {original_func}")
+            @patch_function(func_path)
+            def patched_sanitizer(*args, **kwargs):
+                print("GURT!")
+                return func(*args, **kwargs)  # THIS DOESN'T REALLY DO ANYTHING YET, INFRASTRUCTURE BUILT
 
-            # Check what's currently in the module BEFORE patching
-            module_name, fn_name = func_path.rsplit('.', 1)
-            import importlib
-            module = importlib.import_module(module_name)
-            current_func = getattr(module, fn_name)
-            print(f"DEBUG: Current function in module BEFORE patch: {current_func}")
 
-            # Create the patched function
-            patched_func = create_patched_sanitizer(original_func, func_name)
-            print(f"DEBUG: Created patched function: {patched_func}")
+    # TODO Functional, just don't know how to implement
+    def monkey_patch_sinks(self):
 
-            # Apply the patch
-            try:
-                patch_function(func_path)(patched_func)
-                print(f"DEBUG: patch_function call completed successfully")
-            except Exception as e:
-                print(f"DEBUG: patch_function call failed: {e}")
-                continue
+        for func_name in self._sinks:
+            func = self._sinks[func_name]
+            func_path = self.get_formatted_path(func_name, self._sinks)
 
-            # Check what's in the module AFTER patching
-            # Re-import to get fresh reference
-            importlib.reload(module)
-            module = importlib.import_module(module_name)
-            patched_in_module = getattr(module, fn_name)
-            print(f"DEBUG: Function in module AFTER patch: {patched_in_module}")
-            print(f"DEBUG: Are they the same? {patched_in_module is patched_func}")
-
-            # Test calling it directly
-            print(f"DEBUG: Testing direct call to patched function...")
-            try:
-                test_result = patched_in_module("test_input")
-                print(f"DEBUG: Direct call result: {test_result}, type: {type(test_result)}")
-            except Exception as e:
-                print(f"DEBUG: Direct call failed: {e}")
-
-            print(f"DEBUG: Finished processing {func_name}")
-            print("-" * 50)
+            @patch_function(func_path)
+            def patched_sink(*args, **kwargs):
+                print("GURT!")
+                return func(*args, **kwargs)  # THIS DOESN'T REALLY DO ANYTHING YET, INFRASTRUCTURE BUILT
