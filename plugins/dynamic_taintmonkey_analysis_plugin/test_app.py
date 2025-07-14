@@ -5,7 +5,7 @@ dynamic_test = DynamicTaintMonkey()
 
 secret_code = "Woah so secret"
 
-@dynamic_test.source
+@dynamic_test.source()
 def example_source():
     return "Yo"
 
@@ -16,7 +16,7 @@ def example_sanitizer(this_string, gurt = "yo"):
     else:
         return this_string
 
-@dynamic_test.sink
+@dynamic_test.sink()
 def example_sink(important_string):
     global secret_code
     secret_code = important_string

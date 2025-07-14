@@ -31,11 +31,16 @@ class DynamicTaintMonkey:
         self._sanitizers = dict()
         self._sinks = dict()
 
-    def source(self, func):
-        self._sources[func.__name__] = func
-        def wrapper(*args, **kwargs):
-            return TaintedStr(func(*args, **kwargs))
-        return wrapper
+    def source(self, foo="skibidi"):
+        def decorator(func):
+            self._sources[func.__name__] = func
+
+            def wrapper(*args, **kwargs):
+                return TaintedStr(func(*args, **kwargs))
+
+            return wrapper
+
+        return decorator
 
     def get_sources(self):
         return self._sources
@@ -76,18 +81,24 @@ class DynamicTaintMonkey:
         return self._sanitizers
 
 
-    def sink(self, func):
-        self._sinks[func.__name__] = func
-        def wrapper(*args, **kwargs):
-            if not len(args) > 0:
-                raise ValueError("sanitizer - no args passed")
-            if not isinstance(args[0], TaintedStr):
-                raise ValueError("sanitizer - first argument is not a tainted string")
-            tainted_string = args[0]
-            if tainted_string.is_tainted():
-                raise TaintException("potential vulnerability")
-            return func(*args, **kwargs)
-        return wrapper
+    def sink(self, bar="sigma"):
+
+        def decorator(func):
+            self._sinks[func.__name__] = func
+
+            def wrapper(*args, **kwargs):
+                if not len(args) > 0:
+                    raise ValueError("sanitizer - no args passed")
+                if not isinstance(args[0], TaintedStr):
+                    raise ValueError("sanitizer - first argument is not a tainted string")
+                tainted_string = args[0]
+                if tainted_string.is_tainted():
+                    raise TaintException("potential vulnerability")
+                return func(*args, **kwargs)
+
+            return wrapper
+
+        return decorator
 
     def get_sinks(self):
         return self._sinks
