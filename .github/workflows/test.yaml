@@ -1,0 +1,36 @@
+name: CI - Run Unit Tests
+
+on:
+    push:
+        branches:
+            - main
+        paths:
+            - 'taintmonkey/**'
+    pull_request:
+        branches:
+            - main
+        paths:
+            - 'taintmonkey/**'
+    workflow_dispatch:
+
+jobs:
+    test:
+        name: Run Tests
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.x'
+
+            - name: Install dependencies
+              run: |
+                pip install -r requirements.txt
+                pip install pytest
+
+            - name: Run tests
+              run: PYTHONPATH=. pytest
