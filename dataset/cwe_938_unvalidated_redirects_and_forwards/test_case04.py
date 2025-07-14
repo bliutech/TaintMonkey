@@ -1,4 +1,6 @@
 from flask import Flask, request, redirect
+import requests
+
 
 app = Flask(__name__)
 
@@ -21,12 +23,12 @@ def validated_redirect():
 
     return "Invalid redirect URL", 400
 
-#furl used to sanitize url scheme
-def safe(url):
-    from furl import furl
-    furled=furl(url)
+#requests used to prevent all automatic redirects
+#only allows URLs that respond without redirects
 
-    return furled.scheme == "https" or furled.scheme == "http"
+def safe(url):
+    redirect = requests.get(url, allow_redirects=False)
+    return redirect.status_code not in (301, 302, 307, 308)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
