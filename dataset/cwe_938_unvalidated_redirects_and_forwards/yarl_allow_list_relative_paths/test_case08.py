@@ -1,14 +1,14 @@
 from flask import Flask, request, redirect
-from furl import furl
+from yarl import URL
 
 app = Flask(__name__)
 
-ALLOW_LIST = {"www.allowed.com", "www.safe.com", "www.secure.com"}
-ALLOW_PATHS = {"/safe", "/allowed", "/secure", "", "/"}
+ALLOW_RELATIVE_PATHS = {"/safe", "/allowed", "/secure"}
+
 
 @app.route("/unvalidated_redirect", methods=["GET"])
 def unvalidated_redirect():
-    redirect_url = request.args.get("url")
+    redirect_url = request.args.get("path")
     if not redirect_url:
         return "No URL provided", 400
     return redirect(redirect_url)
@@ -16,7 +16,7 @@ def unvalidated_redirect():
 
 @app.route("/validated_redirect", methods=["GET"])
 def validated_redirect():
-    redirect_url = request.args.get("url")
+    redirect_url = request.args.get("path")
 
     if not redirect_url:
         return "No URL provided", 400
@@ -26,15 +26,15 @@ def validated_redirect():
 
     return "Invalid redirect URL", 400
 
-#furl used to check for allowable urls
+#yarl used to check for allowable relative paths
 
-def safe(url):
-    parsed_url = furl(url)
+def safe(path):
+    parsed_url = URL(path)
 
     return (
-        (parsed_url.scheme == "http" or parsed_url.scheme == "https")
-        and parsed_url.host in ALLOW_LIST
-        and str(parsed_url.path) in ALLOW_PATHS
+        (parsed_url.scheme == "" or parsed_url.scheme == None)
+        and (parsed_url.host == "" or parsed_url.host == None)
+        and parsed_url.path in ALLOW_RELATIVE_PATHS
     )
 
 

@@ -1,10 +1,10 @@
 from flask import Flask, request, redirect
-from furl import furl
+from yarl import URL
 
 app = Flask(__name__)
 
-ALLOW_LIST = {"www.allowed.com", "www.safe.com", "www.secure.com"}
-ALLOW_PATHS = {"/safe", "/allowed", "/secure", "", "/"}
+DENY_LIST = {"www.malicious.com", "www.evil.com", "www.unsafe.com"}
+
 
 @app.route("/unvalidated_redirect", methods=["GET"])
 def unvalidated_redirect():
@@ -26,15 +26,14 @@ def validated_redirect():
 
     return "Invalid redirect URL", 400
 
-#furl used to check for allowable urls
+#yarl used to check for denyable domains
 
 def safe(url):
-    parsed_url = furl(url)
+    parsed_url = URL(url)
 
     return (
         (parsed_url.scheme == "http" or parsed_url.scheme == "https")
-        and parsed_url.host in ALLOW_LIST
-        and str(parsed_url.path) in ALLOW_PATHS
+        and parsed_url.host not in DENY_LIST
     )
 
 

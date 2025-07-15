@@ -1,5 +1,6 @@
 from flask import Flask, request, redirect
-from furl import furl
+import requests
+
 
 app = Flask(__name__)
 
@@ -26,15 +27,15 @@ def validated_redirect():
 
     return "Invalid redirect URL", 400
 
-#furl used to check for allowable urls
+#yarl used to check for allowable domains
 
 def safe(url):
-    parsed_url = furl(url)
+    parsed_url = requests.utils.urlparse(url)
 
     return (
         (parsed_url.scheme == "http" or parsed_url.scheme == "https")
-        and parsed_url.host in ALLOW_LIST
-        and str(parsed_url.path) in ALLOW_PATHS
+        and parsed_url.netloc in ALLOW_LIST
+        and parsed_url.path in ALLOW_PATHS
     )
 
 
