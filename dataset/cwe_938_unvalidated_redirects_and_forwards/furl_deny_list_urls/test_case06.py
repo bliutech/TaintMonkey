@@ -26,15 +26,16 @@ def validated_redirect():
 
     return "Invalid redirect URL", 400
 
-#furl used to check for denyable domains
+
+# furl used to check for denyable domains
+
 
 def safe(url):
     parsed_url = furl(url)
 
     return (
-        (parsed_url.scheme == "http" or parsed_url.scheme == "https")
-        and parsed_url.netloc not in DENY_LIST
-    )
+        parsed_url.scheme == "http" or parsed_url.scheme == "https"
+    ) and parsed_url.netloc not in DENY_LIST
 
 
 if __name__ == "__main__":

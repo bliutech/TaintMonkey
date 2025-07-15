@@ -26,7 +26,9 @@ def validated_redirect():
 
     return "Invalid redirect URL", 400
 
-#furl used to check for allowable relative paths
+
+# furl used to check for allowable relative paths
+
 
 def safe(path):
     parsed_url = furl(path)

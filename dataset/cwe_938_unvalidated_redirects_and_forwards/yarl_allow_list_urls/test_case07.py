@@ -7,6 +7,7 @@ app = Flask(__name__)
 ALLOW_LIST = {"www.allowed.com", "www.safe.com", "www.secure.com"}
 ALLOW_PATHS = {"/safe", "/allowed", "/secure", "", "/"}
 
+
 @app.route("/unvalidated_redirect", methods=["GET"])
 def unvalidated_redirect():
     redirect_url = request.args.get("url")
@@ -27,7 +28,9 @@ def validated_redirect():
 
     return "Invalid redirect URL", 400
 
-#yarl used to check for allowable urls
+
+# yarl used to check for allowable urls
+
 
 def safe(url):
     parsed_url = URL(url)

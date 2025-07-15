@@ -35,9 +35,8 @@ def safe(url):
     parsed_url = urlparse(url)
 
     return (
-        (parsed_url.scheme == "http" or parsed_url.scheme == "https")
-        and parsed_url.netloc not in DENY_LIST
-    )
+        parsed_url.scheme == "http" or parsed_url.scheme == "https"
+    ) and parsed_url.netloc not in DENY_LIST
 
     # checks scheme for http or https
     # checks domain for denyable domains
