@@ -90,7 +90,6 @@ def show_current_user():
 @app.get("/admin")
 @login_required
 def for_admin():
-    print(current_user.get_role())
     if current_user.get_role() != "admin":
         return redirect("/current_user")
     return "SECRET ONLY FOR ADMINS"
