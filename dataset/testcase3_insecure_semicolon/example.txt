@@ -1,1 +1,0 @@
-This is testcase3 insecure example file

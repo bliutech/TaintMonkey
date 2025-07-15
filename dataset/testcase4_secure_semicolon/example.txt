@@ -1,1 +1,0 @@
-This is testcase4 secure example file
