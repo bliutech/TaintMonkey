@@ -1,7 +1,9 @@
 from flask import Flask, request, redirect
-from urllib.parse import urlparse
+from furl import furl
 
 app = Flask(__name__)
+
+DENY_LIST = {"www.malicious.com", "www.evil.com", "www.unsafe.com"}
 
 
 @app.route("/unvalidated_redirect", methods=["GET"])
@@ -24,21 +26,15 @@ def validated_redirect():
 
     return "Invalid redirect URL", 400
 
-
-# urllib used to prevent open redirects via hostname tricks
-
+#furl used to check for denyable domains
 
 def safe(url):
-    parsed_url = urlparse(url)
+    parsed_url = furl(url)
 
-    domains = {"www.allowed.com", "www.safe.com", "www.secure.com"}
-    hostname = parsed_url.hostname
-    hostname = hostname.lower().strip(".")
-
-    # hostname tricks like url=https://safe.com@unsafe.org won't work
-    # hostname.lower().strip('.') returns only the hostname, unsafe.org ^
-
-    return hostname in domains
+    return (
+        (parsed_url.scheme == "http" or parsed_url.scheme == "https")
+        and parsed_url.netloc not in DENY_LIST
+    )
 
 
 if __name__ == "__main__":

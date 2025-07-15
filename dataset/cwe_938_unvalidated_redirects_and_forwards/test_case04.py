@@ -1,9 +1,10 @@
 from flask import Flask, request, redirect
-from urllib.parse import urlparse
-
+from furl import furl
 
 app = Flask(__name__)
 
+ALLOW_LIST = {"www.allowed.com", "www.safe.com", "www.secure.com"}
+ALLOW_PATHS = {"/safe", "/allowed", "/secure", "", "/"}
 
 @app.route("/unvalidated_redirect", methods=["GET"])
 def unvalidated_redirect():
@@ -25,27 +26,16 @@ def validated_redirect():
 
     return "Invalid redirect URL", 400
 
-
-# urllib used to check for allowable redirect links
-# checks for an entire link and whether or not it is secure
-
+#furl used to check for allowable domains
 
 def safe(url):
-    parsed_url = urlparse(url)
-
-    domains = {"www.allowed.com", "www.safe.com", "www.secure.com"}
-    paths = {"/safe", "/allowed", "/secure", "", "/"}
-    ## "" and "/" cases --> if no path is entered
+    parsed_url = furl(url)
 
     return (
         (parsed_url.scheme == "http" or parsed_url.scheme == "https")
-        and parsed_url.netloc in domains
-        and parsed_url.path in paths
+        and parsed_url.host in ALLOW_LIST
+        and str(parsed_url.path) in ALLOW_PATHS
     )
-
-    # checks scheme for http or https
-    # checks domain for allowable domains
-    # checks paths for allowable paths within those domains
 
 
 if __name__ == "__main__":

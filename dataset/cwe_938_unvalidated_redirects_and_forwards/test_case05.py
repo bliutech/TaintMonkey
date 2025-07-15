@@ -1,13 +1,14 @@
 from flask import Flask, request, redirect
-from urllib.parse import urlparse
-import socket, ipaddress
+from furl import furl
 
 app = Flask(__name__)
+
+ALLOW_RELATIVE_PATHS = {"/safe", "/allowed", "/secure"}
 
 
 @app.route("/unvalidated_redirect", methods=["GET"])
 def unvalidated_redirect():
-    redirect_url = request.args.get("url")
+    redirect_url = request.args.get("path")
     if not redirect_url:
         return "No URL provided", 400
     return redirect(redirect_url)
@@ -15,7 +16,7 @@ def unvalidated_redirect():
 
 @app.route("/validated_redirect", methods=["GET"])
 def validated_redirect():
-    redirect_url = request.args.get("url")
+    redirect_url = request.args.get("path")
 
     if not redirect_url:
         return "No URL provided", 400
@@ -25,17 +26,16 @@ def validated_redirect():
 
     return "Invalid redirect URL", 400
 
+#furl used to check for allowable relative paths
 
-# Prevents redirects to internal IPs
-# addreses SSRF
+def safe(path):
+    parsed_url = furl(path)
 
-
-def safe(url):
-    parsed_url = urlparse(url)
-    hostname = parsed_url.hostname
-    ip = socket.gethostbyname(hostname)
-
-    return ipaddress.ip_address(ip).is_global
+    return (
+        (parsed_url.scheme == "" or parsed_url.scheme == None)
+        and (parsed_url.host == "" or parsed_url.host == None)
+        and str(parsed_url.path) in ALLOW_RELATIVE_PATHS
+    )
 
 
 if __name__ == "__main__":

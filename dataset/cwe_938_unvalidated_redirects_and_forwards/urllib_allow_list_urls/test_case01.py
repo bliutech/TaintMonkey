@@ -1,9 +1,11 @@
 from flask import Flask, request, redirect
-import requests
+from urllib.parse import urlparse
 
 
 app = Flask(__name__)
 
+ALLOW_LIST = {"www.allowed.com", "www.safe.com", "www.secure.com"}
+ALLOW_PATHS = {"/safe", "/allowed", "/secure", "", "/"}
 
 @app.route("/unvalidated_redirect", methods=["GET"])
 def unvalidated_redirect():
@@ -26,13 +28,22 @@ def validated_redirect():
     return "Invalid redirect URL", 400
 
 
-# requests used to prevent all automatic redirects
-# only allows URLs that respond without redirects
+# urllib used to check for allowable redirect links
+# checks for an entire link and whether or not it is secure
 
 
 def safe(url):
-    redirect = requests.get(url, allow_redirects=False)
-    return redirect.status_code not in (301, 302, 307, 308)
+    parsed_url = urlparse(url)
+
+    return (
+        (parsed_url.scheme == "http" or parsed_url.scheme == "https")
+        and parsed_url.netloc in ALLOW_LIST
+        and parsed_url.path in ALLOW_PATHS
+    )
+
+    # checks scheme for http or https
+    # checks domain for allowable domains
+    # checks paths for allowable paths within those domains
 
 
 if __name__ == "__main__":
