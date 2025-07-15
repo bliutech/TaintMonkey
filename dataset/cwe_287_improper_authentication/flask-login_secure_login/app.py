@@ -1,13 +1,13 @@
-from flask import Flask, request, redirect
+from flask import Flask, request
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key'
+app.config['SECRET_KEY'] = 'supersecretkey'
 
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'insecure_login_show'
+login_manager.login_view = 'secure_login_get'
 
 users = {
     "admin": "admin123",
@@ -32,8 +32,19 @@ def load_user(user_id):
 def get_username(this_request):
     return this_request.form.get("username")
 
+#Sanitizer
+def credentials_valid(this_username, this_password, user_db):
+    db_password = user_db.get(this_username) #Gets password and checks if user exists
+    if db_password is None:
+        return False
+
+    if this_password != db_password: #Check if passwords match
+        return False
+
+    return True
+
 @app.get("/login")
-def insecure_login_show():
+def secure_login_get():
     return '''
         <form method="post">
             <h2>Login</h2>
@@ -51,7 +62,7 @@ def insecure_login_show():
     '''
 
 @app.post("/login")
-def insecure_login_post():
+def secure_login_post():
     username = get_username(request)
     if username is None:
         return "This should not happen - no username"
@@ -59,8 +70,11 @@ def insecure_login_post():
     if password is None:
         return "This should not happen - no password"
 
-    user = User(username)
-    login_user(user) #Sink
+    if not credentials_valid(username, password, users):
+        return "Invalid credentials"
+
+    user = User(username) #Sink
+    login_user(user) #Sink? This is where tainted objects could be helpful
 
     return f"Welcome, {username}!"
 
