@@ -2,6 +2,7 @@ import pytest
 from flask import Flask, request
 
 from taintmonkey.client import register_taint_client
+from taintmonkey.taint import TaintedStr
 
 
 @pytest.fixture

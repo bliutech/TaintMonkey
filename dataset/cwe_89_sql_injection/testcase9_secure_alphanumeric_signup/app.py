@@ -28,16 +28,16 @@ def iecure_signup():
         return error
 
     # takes the command as a string, no affect on system
-    query = text("INSERT INTO user (username, password) VALUES (:username, :password)")
+    query = text(f"INSERT INTO user (username, password) VALUES (:username, :password)")
 
     try:
         # runs username and password direct because already checked
         db.db.session.execute(query, {"username": username, "password": password})
         db.db.session.commit()
         return "User created securely", 201
-    except Exception:
+    except Exception as e:
         db.db.session.rollback()
-        return "Error creating user", 500
+        return f"Error creating user", 500
 
 
 if __name__ == "__main__":

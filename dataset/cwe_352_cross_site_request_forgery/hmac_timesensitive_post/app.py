@@ -1,12 +1,9 @@
 from flask import jsonify
 import functools
 
-from flask import Flask, g, request, session
+from flask import Flask, flash, g, redirect, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
-import hmac
-import hashlib
-import base64
-import time
+import hmac, hashlib, base64, time
 
 users = {}
 app = Flask(__name__)

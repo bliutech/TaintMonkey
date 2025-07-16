@@ -22,8 +22,7 @@ from taintmonkey.fuzzer import DictionaryFuzzer
 from taintmonkey.taint import TaintedStr
 from taintmonkey.patch import patch_function
 
-import os
-import sys
+import os, sys
 
 SOURCES = []
 

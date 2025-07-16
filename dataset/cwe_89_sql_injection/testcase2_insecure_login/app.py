@@ -20,7 +20,7 @@ def insecure_second_level():
         result = db.session.execute(query).fetchall()
         if result:
             # not expected to work, means that sql command injection didn't run
-            return "Found users with similar usernames", 200
+            return f"Found users with similar usernames", 200
         return "No users found", 404
     except Exception as e:
         return f"Error: {str(e)}", 500
