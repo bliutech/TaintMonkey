@@ -18,6 +18,7 @@ def insecure_handler():
     #does not validate
     decoded_file = unquote(unquote(raw_file))
     
+    # just create an exit code
     exit_code = os.system(open_file_command(decoded_file))
     
     if exit_code == 0:
