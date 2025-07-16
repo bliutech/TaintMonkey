@@ -54,7 +54,7 @@ def secure_upload():
             return 'HTML file contains potentially malicious elements', 400
     
     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-    return redirect(url_for('uploaded_file', filename))
+    return redirect(url_for('uploaded_file', filename=filename))
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
