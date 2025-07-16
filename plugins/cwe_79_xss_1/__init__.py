@@ -70,6 +70,9 @@ def fuzzer(app):
     return DictionaryFuzzer(app, "plugins/cwe_79_xss_1/dictionary.txt")
 
 
+from urllib.parse import urlencode
+
+
 def test_taint_exception(client):
     payload = "<script>alert('XSS')</script>"
     query = urlencode({"name": payload})
