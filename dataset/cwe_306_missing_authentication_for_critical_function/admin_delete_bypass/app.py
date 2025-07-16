@@ -22,9 +22,10 @@ def login_send():
         return f"Welcome, {username}!"
     return "Invalid credentials"
 
+
 @app.get("/login")
 def login_show():
-    return '''
+    return """
         <form method="post">
             <h2>Login</h2>
             Username: <input name="username"><br>
@@ -35,7 +36,7 @@ def login_show():
         <form action="/logout" method="post">
             <button type="submit">Logout</button>
         </form>
-    '''
+    """
 
 
 def is_user_in_session(user_string, this_session):
@@ -48,17 +49,18 @@ def insecure_delete_user():
         return redirect("/login")
 
     user_to_delete = request.args.get("user")
-    #CWE-863: No check if current user is admin
+    # CWE-863: No check if current user is admin
     return f"User {user_to_delete} deleted (pretend)"
 
-#Checks to see if a user is authorized as an admin
+
+# Checks to see if a user is authorized as an admin
 def is_admin(this_session, role_string, admin_string):
     return role_string in this_session and this_session.get(role_string) == admin_string
 
 
 @app.delete("/secure/admin/delete_user")
 def secure_delete_user():
-    #Here we check to make sure that the logged-in user is admin
+    # Here we check to make sure that the logged-in user is admin
     if not is_admin(session, "role", "admin"):
         return redirect("/login")
 
@@ -76,12 +78,12 @@ def logout():
     if not session:
         return "No Session"
     session.clear()
-    return '''
+    return """
         <h2>You have been logged out.</h2>
         <form action="/login" method="get">
             <button type="submit">Back to Login</button>
         </form>
-    '''
+    """
 
 
 if __name__ == "__main__":

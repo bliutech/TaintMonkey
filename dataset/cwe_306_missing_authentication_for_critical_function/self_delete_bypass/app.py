@@ -19,9 +19,10 @@ def login_send():
         return f"Welcome, {username}!"
     return "Invalid credentials"
 
+
 @app.get("/login")
 def login_show():
-    return '''
+    return """
         <form method="post">
             <h2>Login</h2>
             Username: <input name="username"><br>
@@ -35,7 +36,7 @@ def login_show():
         <form action="/signup" method="get">
             <button type="submit">Sign Up</button>
         </form>
-    '''
+    """
 
 
 @app.post("/signup")
@@ -48,9 +49,10 @@ def signup_send():
     users[username] = password
     return f"{username}, registered!"
 
+
 @app.get("/signup")
 def signup_show():
-    return '''
+    return """
         <form action="/signup" method="post">
             <h2>Sign Up</h2>
             Username: <input name="username"><br>
@@ -61,7 +63,7 @@ def signup_show():
         <form action="/login" method="get">
             <button type="submit">Login</button>
         </form>
-    '''
+    """
 
 
 def is_user_in_session(user_string, this_session):
@@ -77,7 +79,7 @@ def insecure_delete_user():
     if not user_to_delete:
         return "No URL parameter"
 
-    #CWE-863: No check if current user is itself
+    # CWE-863: No check if current user is itself
     return f"User {user_to_delete} deleted (pretend)"
 
 
@@ -101,7 +103,7 @@ def secure_delete_user():
     return f"User {user_to_delete} deleted"
 
 
-#Monkey patch function
+# Monkey patch function
 def user_and_session_user_match(user, user_string, this_session):
     return user == this_session[user_string]
 
@@ -111,12 +113,12 @@ def logout():
     if not session:
         return "No Session"
     session.clear()
-    return '''
+    return """
         <h2>You have been logged out.</h2>
         <form action="/login" method="get">
             <button type="submit">Back to Login</button>
         </form>
-    '''
+    """
 
 
 if __name__ == "__main__":

@@ -10,7 +10,6 @@ users = {
 }
 
 
-
 @app.post("/login")
 def login_send():
     username = request.form["username"]
@@ -20,17 +19,17 @@ def login_send():
     if db_password and db_password == password:
         session["username"] = username
 
-        return f'''
+        return f"""
             Welcome, {username}!
-        '''
-    return '''
+        """
+    return """
         Invalid credentials
-    '''
+    """
 
 
 @app.get("/login")
 def login_show():
-    return '''
+    return """
         <form method="post">
             <h2>Login</h2>
             Username: <input name="username"><br>
@@ -47,23 +46,27 @@ def login_show():
         <form action="/insecure/reset_password" method="get">
             <button type="submit">Insecure Reset Password</button>
         </form>
-    '''
+    """
 
-#Source
+
+# Source
 def get_new_password(this_request):
     return this_request.form.get("new_password")
 
-#Sanitizer
+
+# Sanitizer
 def password_is_correct(old_password, db_password):
     return old_password == db_password
 
-#Sink
+
+# Sink
 def set_new_password(password, username, user_db):
     user_db[username] = password
 
+
 @app.get("/secure/reset_password")
 def secure_reset_password_show():
-    return '''
+    return """
         <form method="post">
             <h2>Reset Password</h2>
             Username: <input name="username"><br>
@@ -71,7 +74,8 @@ def secure_reset_password_show():
             New Password: <input name="new_password" type="password"><br>
             <input type="submit" value="Reset">
         </form>
-    '''
+    """
+
 
 @app.post("/secure/reset_password")
 def secure_reset_password_send():
@@ -93,25 +97,25 @@ def secure_reset_password_send():
         return "Incorrect password - old password does not match database password"
 
     set_new_password(new_password, username, users)
-    return f'''
+    return f"""
         {username}, your password is reset!
         <form action="/login" method="get">
             <button type="submit">Login</button>
         </form>
-    '''
-
+    """
 
 
 @app.get("/insecure/reset_password")
 def insecure_reset_password_show():
-    return '''
+    return """
         <form method="post">
             <h2>Reset Password</h2>
             Username: <input name="username"><br>
             Nww Password: <input name="new_password" type="password"><br>
             <input type="submit" value="Reset">
         </form>
-    '''
+    """
+
 
 @app.post("/insecure/reset_password")
 def insecure_reset_password_send():
@@ -127,14 +131,15 @@ def insecure_reset_password_send():
         "No user in database"
 
     set_new_password(new_password, username, users)
-    return f'''
+    return f"""
         {username}, your password is reset!
         <form action="/login" method="get">
             <button type="submit">Login</button>
         </form>
-    '''
+    """
 
-#Monkey patch?
+
+# Monkey patch?
 def user_login_info_correct(username, password, database):
     return username in database and username[username] == password
 
@@ -144,9 +149,10 @@ def logout():
     if not session:
         return "No Session"
     session.clear()
-    return '''
+    return """
         <h2>You have been logged out.</h2>
-    '''
+    """
+
 
 @app.get("/session")
 def session_show():
@@ -155,6 +161,7 @@ def session_show():
         return "No session"
 
     return f"Your session is: {username}"
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)

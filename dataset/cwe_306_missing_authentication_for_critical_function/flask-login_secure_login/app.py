@@ -1,19 +1,23 @@
 from flask import Flask, request
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_login import (
+    LoginManager,
+    UserMixin,
+    login_user,
+    login_required,
+    logout_user,
+    current_user,
+)
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'supersecretkey'
+app.config["SECRET_KEY"] = "supersecretkey"
 
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'secure_login_get'
+login_manager.login_view = "secure_login_get"
 
-users = {
-    "admin": "admin123",
-    "audrey": "audrey123",
-    "sebastian": "sebastian123"
-}
+users = {"admin": "admin123", "audrey": "audrey123", "sebastian": "sebastian123"}
+
 
 class User(UserMixin):
     def __init__(self, username):
@@ -22,30 +26,34 @@ class User(UserMixin):
     def get_username(self):
         return self.id
 
+
 @login_manager.user_loader
 def load_user(user_id):
     if user_id in users:
         return User(user_id)
     return None
 
-#Source
+
+# Source
 def get_username(this_request):
     return this_request.form.get("username")
 
-#Sanitizer
+
+# Sanitizer
 def credentials_valid(this_username, this_password, user_db):
-    db_password = user_db.get(this_username) #Gets password and checks if user exists
+    db_password = user_db.get(this_username)  # Gets password and checks if user exists
     if db_password is None:
         return False
 
-    if this_password != db_password: #Check if passwords match
+    if this_password != db_password:  # Check if passwords match
         return False
 
     return True
 
+
 @app.get("/login")
 def secure_login_get():
-    return '''
+    return """
         <form method="post">
             <h2>Login</h2>
             Username: <input name="username"><br>
@@ -59,7 +67,8 @@ def secure_login_get():
         <form action="/logout" method="post">
             <button type="submit">Logout</button>
         </form>
-    '''
+    """
+
 
 @app.post("/login")
 def secure_login_post():
@@ -73,20 +82,23 @@ def secure_login_post():
     if not credentials_valid(username, password, users):
         return "Invalid credentials"
 
-    user = User(username) #Sink
-    login_user(user) #Sink? This is where tainted objects could be helpful
+    user = User(username)  # Sink
+    login_user(user)  # Sink? This is where tainted objects could be helpful
 
     return f"Welcome, {username}!"
+
 
 @app.post("/logout")
 def logout():
     logout_user()
     return "Logged out"
 
+
 @app.get("/current_user")
 @login_required
 def show_current_user():
     return f"Currently {current_user.get_username()}"
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
