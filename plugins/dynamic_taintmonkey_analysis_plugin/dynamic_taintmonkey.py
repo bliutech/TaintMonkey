@@ -8,8 +8,8 @@ Seeks to automatically taint and fuzz via the user of @source, @sanitizer, and @
 CWD (Current Working Directory) should be TaintMonkey (parent of plugins)
 """
 
-#TODO: I want to implement a live monkey patching algorithm that tries to find functions that look like they might be
-#TODO: user input. Also, I need to implement a pytest fixture that generates a fuzzer harness
+# TODO: I want to implement a live monkey patching algorithm that tries to find functions that look like they might be
+# TODO: user input. Also, I need to implement a pytest fixture that generates a fuzzer harness
 
 import inspect
 import os
@@ -29,7 +29,6 @@ from taintmonkey.patch import patch_function
 
 
 class DynamicTaintMonkey:
-
     def __init__(self):
         self._sources = dict()
         self._sanitizers = dict()
@@ -130,8 +129,8 @@ class DynamicTaintMonkey:
     def get_function_from_path(func_path: str):
         """Get a function from a dot-separated path string"""
         # Split the path into module and function parts
-        path_parts = func_path.split('.')
-        module_path = '.'.join(path_parts[:-1])  # Everything except the last part
+        path_parts = func_path.split(".")
+        module_path = ".".join(path_parts[:-1])  # Everything except the last part
         func_name = path_parts[-1]  # The last part is the function name
 
         # Import the module
@@ -144,7 +143,6 @@ class DynamicTaintMonkey:
 
     # TODO Functional, just don't know how to implement
     def monkey_patch_sources(self):
-
         for func_name in self._sources:
             func = self._sources[func_name]
             func_path = self.get_formatted_path(func_name, self._sources)
@@ -152,11 +150,12 @@ class DynamicTaintMonkey:
             @patch_function(func_path)
             def patched_source(*args, **kwargs):
                 print("GURT!")
-                return func(*args, **kwargs) #THIS DOESN'T REALLY DO ANYTHING YET, INFRASTRUCTURE BUILT
+                return func(
+                    *args, **kwargs
+                )  # THIS DOESN'T REALLY DO ANYTHING YET, INFRASTRUCTURE BUILT
 
     # TODO Functional, just don't know how to implement
     def monkey_patch_sanitizers(self):
-
         for func_name in self._sanitizers:
             func = self._sanitizers[func_name]
             func_path = self.get_formatted_path(func_name, self._sanitizers)
@@ -164,12 +163,12 @@ class DynamicTaintMonkey:
             @patch_function(func_path)
             def patched_sanitizer(*args, **kwargs):
                 print("GURT!")
-                return func(*args, **kwargs)  # THIS DOESN'T REALLY DO ANYTHING YET, INFRASTRUCTURE BUILT
-
+                return func(
+                    *args, **kwargs
+                )  # THIS DOESN'T REALLY DO ANYTHING YET, INFRASTRUCTURE BUILT
 
     # TODO Functional, just don't know how to implement
     def monkey_patch_sinks(self):
-
         for func_name in self._sinks:
             func = self._sinks[func_name]
             func_path = self.get_formatted_path(func_name, self._sinks)
@@ -177,4 +176,6 @@ class DynamicTaintMonkey:
             @patch_function(func_path)
             def patched_sink(*args, **kwargs):
                 print("GURT!")
-                return func(*args, **kwargs)  # THIS DOESN'T REALLY DO ANYTHING YET, INFRASTRUCTURE BUILT
+                return func(
+                    *args, **kwargs
+                )  # THIS DOESN'T REALLY DO ANYTHING YET, INFRASTRUCTURE BUILT
