@@ -1,18 +1,18 @@
-from flask import request, Flask
+from flask import request, Flask, redirect, url_for
+from werkzeug.security import safe_join
 
 app = Flask(__name__)
+ALLOWED_DIR = app.root_path
 
-allowlist = ["user_page.txt"]
+
+# Source
+def get_page_post(this_request):
+    return this_request.form.get("query")
 
 
 # Source
 def get_page(this_request):
-    return this_request.form.get("query")
-
-
-# Sanitizer
-def page_is_allowed(page):
-    return page in allowlist
+    return this_request.args.get("page")
 
 
 @app.get("/")
@@ -37,11 +37,18 @@ def search_get():
 
 @app.post("/search")
 def search_post():
+    page = get_page_post(request)  # Source
+    safe_path = safe_join(ALLOWED_DIR, page)  # Sanitizer
+
+    if safe_path is None:
+        return "Outside of allowed directory"
+
+    return redirect(url_for("view", page=safe_path))  # FAKE SINK
+
+
+@app.get("/view")
+def view():
     page = get_page(request)  # Source
-
-    if not page_is_allowed(page):  # Sanitizer
-        return "Page not allowed"
-
     with open(page, "r") as f:  # Sink
         return f.read()
 
