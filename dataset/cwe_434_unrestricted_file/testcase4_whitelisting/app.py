@@ -26,7 +26,7 @@ def insecure_upload():
         extension = filename.rsplit('.', 1)[1].lower()
         
         if extension in blacklisted_extensions:
-            return f'File type not allowed. Extension .{extension} is blacklisted.', 400
+            return f'File type not allowed', 400
         
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         return redirect(url_for('uploaded_file', filename=filename))
@@ -78,7 +78,7 @@ def secure_upload():
             return 'File content does not match the extension', 400
     
     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-    return redirect(url_for('uploaded_file', filename))
+    return redirect(url_for('uploaded_file', filename=filename))
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
