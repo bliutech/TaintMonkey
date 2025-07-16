@@ -12,6 +12,7 @@ import random
 import os
 
 from flask import Flask
+
 # from taintmonkey.client import register_taint_client
 from client import register_taint_client
 
@@ -46,6 +47,7 @@ class DictionaryFuzzer(Fuzzer):
 
         yield (test_client, self.inputs)
 
+
 class GrammarBasedFuzzer(Fuzzer):
     @contextmanager
     def get_context(self):  # type: ignore
@@ -53,8 +55,8 @@ class GrammarBasedFuzzer(Fuzzer):
         factory = DefaultGeneratorFactory(generator_class=JSONGenerator)
         tool = GeneratorTool(
             generator_factory=factory,
-            out_format="",           
-            rule="json",          
+            out_format="",
+            rule="json",
             max_depth=5,
             keep_trees=False,
             cleanup=False,
@@ -69,6 +71,7 @@ class GrammarBasedFuzzer(Fuzzer):
 
         yield (test_client, self.inputs)
 
+
 if __name__ == "__main__":
     app = Flask(__name__)
     g = GrammarBasedFuzzer(app, "test_corpus.txt")
@@ -76,4 +79,3 @@ if __name__ == "__main__":
     with g.get_context() as (_, inputs):
         for input in inputs:
             print(input)
-
