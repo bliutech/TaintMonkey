@@ -10,8 +10,7 @@ from typing import override
 
 from werkzeug.datastructures.structures import MultiDict, ImmutableMultiDict
 
-# from taintmonkey.taint import TaintedStr
-from taint import TaintedStr
+from taintmonkey.taint import TaintedStr
 
 
 class TaintClient(FlaskClient):
