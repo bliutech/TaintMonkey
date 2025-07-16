@@ -44,24 +44,24 @@ def new_popen(cmd: TaintedStr, mode: str = "r", buffering: int = -1) -> os._wrap
 
 
 # Patch utility functions
-import dataset.cwe_78_os_command_injection.rce_example_1.app
+import dataset.cwe_78_testcases.testcase1_novalidation.app
 
 old_open_file_command = (
-    dataset.cwe_78_os_command_injection.rce_example_1.app.open_file_command
+    dataset.cwe_78_testcases.testcase1_novalidation.app.open_file_command
 )
 
 
 @patch_function(
-    "dataset.cwe_78_os_command_injection.rce_example_1.app.open_file_command"
+    "dataset.cwe_78_testcases.testcase1_novalidation.app.open_file_command"
 )
 def new_open_file_command(file: TaintedStr):
     return TaintedStr(old_open_file_command(file))
 
 
-old_is_safe_path = dataset.cwe_78_os_command_injection.rce_example_1.app.is_safe_path
+old_is_safe_path = dataset.cwe_78_testcases.testcase1_novalidation.app.is_safe_path
 
 
-@patch_function("dataset.cwe_78_os_command_injection.rce_example_1.app.is_safe_path")
+@patch_function("dataset.cwe_78_testcases.testcase1_novalidation.app.is_safe_path")
 def new_is_safe_path(path: TaintedStr):
     path.sanitize()
     return old_is_safe_path(path)
@@ -70,7 +70,7 @@ def new_is_safe_path(path: TaintedStr):
 # https://flask.palletsprojects.com/en/stable/testing/
 @pytest.fixture()
 def app():
-    from dataset.cwe_78_os_command_injection.rce_example_1.app import app
+    from dataset.cwe_78_testcases.testcase1_novalidation.app import app
 
     register_taint_client(app)
 
@@ -96,7 +96,6 @@ def test_taint_exception(client):
 def test_no_taint_exception(client):
     # Expect no exception
     client.get("/secure?file=/etc/passwd")
-
 
 def test_fuzz(fuzzer):
     from urllib.parse import urlencode
