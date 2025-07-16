@@ -12,7 +12,11 @@ import random
 import os
 
 from flask import Flask
-from taintmonkey.client import register_taint_client
+# from taintmonkey.client import register_taint_client
+from client import register_taint_client
+
+from grammar_based_fuzzing.JSONGenerator import JSONGenerator
+from grammarinator.tool import DefaultGeneratorFactory, GeneratorTool
 
 
 class Fuzzer(ABC):
@@ -20,13 +24,13 @@ class Fuzzer(ABC):
         self.flask_app = app
         self.corpus = corpus
         self.inputs = []
-        self.load_corpus()
+        # self.load_corpus()
 
-    def load_corpus(self):
-        if not os.path.exists(self.corpus):
-            raise FileNotFoundError(f"Corpus file not found: {self.corpus}")
-        with open(self.corpus, "r") as f:
-            self.inputs = [line.strip() for line in f if line.strip()]
+    # def load_corpus(self):
+    #     if not os.path.exists(self.corpus):
+    #         raise FileNotFoundError(f"Corpus file not found: {self.corpus}")
+    #     with open(self.corpus, "r") as f:
+    #         self.inputs = [line.strip() for line in f if line.strip()]
 
     @abstractmethod
     def get_context(self):
@@ -41,3 +45,35 @@ class DictionaryFuzzer(Fuzzer):
         test_client = self.flask_app.test_client()
 
         yield (test_client, self.inputs)
+
+class GrammarBasedFuzzer(Fuzzer):
+    @contextmanager
+    def get_context(self):  # type: ignore
+        # Choose a random input from the dictionary
+        factory = DefaultGeneratorFactory(generator_class=JSONGenerator)
+        tool = GeneratorTool(
+            generator_factory=factory,
+            out_format="",           
+            rule="json",          
+            max_depth=5,
+            keep_trees=False,
+            cleanup=False,
+        )
+
+        self.inputs = []
+        test_client = self.flask_app.test_client()
+
+        for i in range(5):
+            out = tool.create(i)
+            self.inputs.append(out)
+
+        yield (test_client, self.inputs)
+
+if __name__ == "__main__":
+    app = Flask(__name__)
+    g = GrammarBasedFuzzer(app, "test_corpus.txt")
+
+    with g.get_context() as (_, inputs):
+        for input in inputs:
+            print(input)
+
