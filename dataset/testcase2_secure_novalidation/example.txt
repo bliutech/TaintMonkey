@@ -1,1 +1,1 @@
-This is testcase2 secure example file
+This is example file
