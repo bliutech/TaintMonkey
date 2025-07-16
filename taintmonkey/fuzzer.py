@@ -21,7 +21,6 @@ from math import inf
 from grammarinator.runtime import *
 
 
-
 class Fuzzer(ABC):
     def __init__(self, app: Flask, corpus: str):
         self.flask_app = app
