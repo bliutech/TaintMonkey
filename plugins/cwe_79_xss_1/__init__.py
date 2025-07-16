@@ -18,7 +18,6 @@ PYTHONPATH=. pytest -vs plugins/cwe_79_xss_1/__init__.py
 ```
 """
 
-
 import pytest
 
 from urllib.parse import urlencode
@@ -36,9 +35,15 @@ SINKS = []
 
 
 import dataset.cwe_79_cross_site_scripting.html_escape_custom_check_response.app
-old_say_hi = dataset.cwe_79_cross_site_scripting.html_escape_custom_check_response.app.say_hi
 
-@patch_function("dataset.cwe_79_cross_site_scripting.html_escape_custom_check_response.app.say_hi")
+old_say_hi = (
+    dataset.cwe_79_cross_site_scripting.html_escape_custom_check_response.app.say_hi
+)
+
+
+@patch_function(
+    "dataset.cwe_79_cross_site_scripting.html_escape_custom_check_response.app.say_hi"
+)
 def new_say_hi(name) -> str:
     if hasattr(name, "is_tainted") and name.is_tainted():
         raise TaintException("potential XSS vulnerability")
@@ -47,9 +52,12 @@ def new_say_hi(name) -> str:
 
 @pytest.fixture()
 def app():
-    from dataset.cwe_79_cross_site_scripting.html_escape_custom_check_response.app import app
+    from dataset.cwe_79_cross_site_scripting.html_escape_custom_check_response.app import (
+        app,
+    )
+
     register_taint_client(app)
-    yield(app)
+    yield (app)
 
 
 @pytest.fixture()
@@ -63,21 +71,22 @@ def fuzzer(app):
 
 
 from urllib.parse import urlencode
+
+
 def test_taint_exception(client):
     payload = "<script>alert('XSS')</script>"
-    query = urlencode({'name': payload})
+    query = urlencode({"name": payload})
     with pytest.raises(TaintException):
         client.get(f"/xss?{query}")
 
 
 def test_no_taint_exception(client):
     payload = "<script>alert('XSS')</script>"
-    query = urlencode({'name': payload})
+    query = urlencode({"name": payload})
     client.get(f"/xss_sanitized?{query}")
 
 
 def test_fuzz(fuzzer):
-
     counter = 0
     with fuzzer.get_context() as (client, inputs):
         for data in inputs:
@@ -86,6 +95,7 @@ def test_fuzz(fuzzer):
             with pytest.raises(TaintException):
                 client.get(f"/xss?{urlencode({'name': data})}")
             counter += 1
+
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__]))
