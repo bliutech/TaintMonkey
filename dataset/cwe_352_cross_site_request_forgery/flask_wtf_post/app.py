@@ -1,7 +1,6 @@
-from flask import jsonify
 import functools
 
-from flask import Flask, flash, g, redirect, request, session, url_for
+from flask import Flask, g, request, session
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 
