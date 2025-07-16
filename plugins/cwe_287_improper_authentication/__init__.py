@@ -31,39 +31,35 @@ SINKS = ["sign_up"]
 
 
 # Patch utility functions
-import dataset.cwe_287_improper_authentication.bad_auth_example_1.app
+import dataset.cwe_306_missing_authentication_for_critical_function.sign_up_bypass.app
 
 
-old_get_username = (
-    dataset.cwe_287_improper_authentication.bad_auth_example_1.app.get_username
-)
+old_get_username = dataset.cwe_306_missing_authentication_for_critical_function.sign_up_bypass.app.get_username
 
 
 @patch_function(
-    "dataset.cwe_287_improper_authentication.bad_auth_example_1.app.get_username"
+    "dataset.cwe_306_missing_authentication_for_critical_function.sign_up_bypass.app.get_username"
 )
 def new_get_username(this_request):
     return TaintedStr(old_get_username(this_request))
 
 
-old_user_taken = (
-    dataset.cwe_287_improper_authentication.bad_auth_example_1.app.user_taken
-)
+old_user_taken = dataset.cwe_306_missing_authentication_for_critical_function.sign_up_bypass.app.user_taken
 
 
 @patch_function(
-    "dataset.cwe_287_improper_authentication.bad_auth_example_1.app.user_taken"
+    "dataset.cwe_306_missing_authentication_for_critical_function.sign_up_bypass.app.user_taken"
 )
 def new_user_taken(user_given: TaintedStr, database_given):
     user_given.sanitize()
     return old_user_taken(user_given, database_given)
 
 
-old_sign_up = dataset.cwe_287_improper_authentication.bad_auth_example_1.app.sign_up
+old_sign_up = dataset.cwe_306_missing_authentication_for_critical_function.sign_up_bypass.app.sign_up
 
 
 @patch_function(
-    "dataset.cwe_287_improper_authentication.bad_auth_example_1.app.sign_up"
+    "dataset.cwe_306_missing_authentication_for_critical_function.sign_up_bypass.app.sign_up"
 )
 def new_sign_up(username: TaintedStr, password, user_database):
     if username.is_tainted():
@@ -74,7 +70,9 @@ def new_sign_up(username: TaintedStr, password, user_database):
 # https://flask.palletsprojects.com/en/stable/testing/
 @pytest.fixture()
 def app():
-    from dataset.cwe_287_improper_authentication.bad_auth_example_1.app import app
+    from dataset.cwe_306_missing_authentication_for_critical_function.sign_up_bypass.app import (
+        app,
+    )
 
     register_taint_client(app)
 
