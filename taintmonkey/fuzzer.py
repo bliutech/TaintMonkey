@@ -12,6 +12,7 @@ import random
 import os
 
 from flask import Flask
+from taintmonkey.client import register_taint_client
 
 
 class Fuzzer(ABC):

@@ -2,6 +2,7 @@
 
 from flask import Flask, request
 from lxml.html.clean import Cleaner
+import lxml.html
 
 app = Flask(__name__)
 

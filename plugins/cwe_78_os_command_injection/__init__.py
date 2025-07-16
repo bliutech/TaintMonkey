@@ -20,8 +20,7 @@ from taintmonkey.fuzzer import DictionaryFuzzer
 from taintmonkey.taint import TaintedStr
 from taintmonkey.patch import patch_function
 
-import os
-import sys
+import os, sys
 
 # TODO(bliutech): this might not be necessary. To simplify fuzzing, all data-flow
 # comes from the request object anyways
