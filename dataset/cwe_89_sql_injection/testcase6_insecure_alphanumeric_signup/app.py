@@ -36,9 +36,9 @@ def insecure_signup():
         db.db.session.execute(query)
         db.db.session.commit()
         return "User created successfully", 201
-    except Exception as e:
+    except Exception:
         db.db.session.rollback()
-        return f"Error creating user", 500
+        return "Error creating user", 500
 
 
 if __name__ == "__main__":

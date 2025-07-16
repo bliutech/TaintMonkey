@@ -2,8 +2,8 @@
 Custom Flask test client for tainting requests.
 """
 
-from flask import Flask, Request, request
-from flask.testing import FlaskClient, EnvironBuilder, BaseRequest
+from flask import Flask, Request
+from flask.testing import FlaskClient
 
 import typing as t
 from typing import override

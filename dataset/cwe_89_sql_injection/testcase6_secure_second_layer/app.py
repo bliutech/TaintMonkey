@@ -14,13 +14,13 @@ def secure_second_level():
         return "Username is required", 400
 
     # second-level, getting from database when needed level, takes full string as a string rather
-    query = text(f"SELECT * FROM user WHERE username = :username")
+    query = text("SELECT * FROM user WHERE username = :username")
 
     try:
         result = db.session.execute(query, {"username": username}).fetchall()
         if result:
             # system works to not run sql command and properly find users
-            return f"Found others with similar usernames", 200
+            return "Found others with similar usernames", 200
         return "No users found", 404
     except Exception as e:
         return f"Error: {str(e)}", 500

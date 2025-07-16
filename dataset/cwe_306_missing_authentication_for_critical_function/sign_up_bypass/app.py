@@ -113,7 +113,7 @@ def is_user_in_session(user_string, this_session):
 @app.post("/secret")
 def secret():
     if not is_user_in_session("username", session):
-        return f"Session not logged in"
+        return "Session not logged in"
     username = session["username"]
 
     #This should never be true
@@ -188,7 +188,7 @@ def secure_signup_send():
 
     #Security check
     if user_taken(username, users):
-        return f'''
+        return '''
             Username already taken!
             <form action="/secure/signup" method="get">
                 <button type="submit">Back</button>

@@ -63,7 +63,7 @@ def set_new_password(password, username, user_db):
 
 @app.get("/secure/reset_password")
 def secure_reset_password_show():
-    return f'''
+    return '''
         <form method="post">
             <h2>Reset Password</h2>
             Username: <input name="username"><br>
@@ -104,7 +104,7 @@ def secure_reset_password_send():
 
 @app.get("/insecure/reset_password")
 def insecure_reset_password_show():
-    return f'''
+    return '''
         <form method="post">
             <h2>Reset Password</h2>
             Username: <input name="username"><br>

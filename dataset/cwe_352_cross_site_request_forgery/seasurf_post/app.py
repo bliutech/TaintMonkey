@@ -1,9 +1,8 @@
 # not working
 
-from flask import jsonify
 import functools
 
-from flask import Flask, flash, g, redirect, request, session, url_for, Response
+from flask import Flask, g, request, session, Response
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_seasurf import SeaSurf
 
@@ -95,7 +94,7 @@ def login():
 
     session.clear()
     session["username"] = username
-    return f"User logged in", 200
+    return "User logged in", 200
 
 
 def login_required(view):

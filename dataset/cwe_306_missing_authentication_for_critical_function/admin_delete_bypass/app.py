@@ -64,10 +64,10 @@ def secure_delete_user():
 
     user_to_delete = request.args.get("user")
     if not user_to_delete:
-        return f"No user provided to delete"
+        return "No user provided to delete"
     user_deleted = users.get(user_to_delete)
     if not user_deleted:
-        return f"No user found"
+        return "No user found"
     return f"User {user_to_delete} deleted (pretend)"
 
 
