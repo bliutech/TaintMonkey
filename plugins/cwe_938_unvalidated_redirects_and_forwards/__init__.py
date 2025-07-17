@@ -29,37 +29,38 @@ SINKS = ["redirect_to"]
 
 import dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app
 
-# Sink Patch
+
 old_redirect = dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.redirect_to
 
 
 @patch_function(
     "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.redirect_to"
 )
+# Sink Patch
 def new_redirect(url: TaintedStr):
     if url.is_tainted():
         raise TaintException("potential vulnerability")
     return old_redirect(url)
 
 
-# Source Patch
 old_get_url = dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.get_url
 
 
 @patch_function(
     "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.get_url"
 )
+# Source Patch
 def new_get_url():
     return TaintedStr(old_get_url())
 
 
-# Santizer Patch
 old_check_allow_list = dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.check_allow_list
 
 
 @patch_function(
     "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.check_allow_list"
 )
+# Santizer Patch
 def new_check_allow_list(url: TaintedStr):
     url.sanitize()
     return old_check_allow_list
