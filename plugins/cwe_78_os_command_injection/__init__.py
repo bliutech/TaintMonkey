@@ -97,6 +97,7 @@ def test_no_taint_exception(client):
     # Expect no exception
     client.get("/secure?file=/etc/passwd")
 
+
 def test_fuzz(fuzzer):
     from urllib.parse import urlencode
 
