@@ -89,7 +89,9 @@ def test_fuzz(app, fuzzer):
                 )
                 # some test files use get instead
                 response = attacker.post(
-                    response = victim.post("/insecure-update", json={"new_password": "my_new_password"})
+                    response=victim.post(
+                        "/insecure-update", json={"new_password": "my_new_password"}
+                    )
                 )
                 print(response.data.decode())
             counter += 1

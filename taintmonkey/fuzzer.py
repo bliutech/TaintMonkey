@@ -59,12 +59,12 @@ class JSONGenerator(Generator):
     EOF.min_depth = 0
 
     def json(self, parent=None):
-        '''
+        """
         Defines top-level JSON structure
         Currently it can be any value (object, array, string, etc.)
         If you want to enforce top-level as always an object, replace:
         self.value(...) --> self.obj(...)
-        '''
+        """
         with RuleContext(self, UnparserRule(name="json", parent=parent)) as current:
             self.obj(parent=current)
             self.EOF(parent=current)
@@ -73,9 +73,9 @@ class JSONGenerator(Generator):
     json.min_depth = 1
 
     def obj(self, parent=None):
-        '''
+        """
         Defines a JSON object
-        '''
+        """
         with RuleContext(self, UnparserRule(name="obj", parent=parent)) as current:
             # first list -> minimum depth constraints
             # second list -> probability weights (delete second element for no empty option)
@@ -100,27 +100,29 @@ class JSONGenerator(Generator):
     obj.min_depth = 0
 
     def pair(self, parent=None):
-        '''
+        """
         Defines a key-value pair
-        '''
+        """
         with RuleContext(self, UnparserRule(name="pair", parent=parent)) as current:
             # Optional: provide a key corpus
             # Adjust probability to adjust how often used
             if random.random() < 0.5:
-                key = random.choice(["username", "password", "csrf_token", "new_password"])
+                key = random.choice(
+                    ["username", "password", "csrf_token", "new_password"]
+                )
                 UnlexerRule(src=f'"{key}"', parent=current)
             else:
-                self.STRING(parent=current) # key
+                self.STRING(parent=current)  # key
             UnlexerRule(src=":", parent=current)
-            self.value(parent=current) # value
+            self.value(parent=current)  # value
             return current
 
     pair.min_depth = 1
 
     def arr(self, parent=None):
-        '''
+        """
         Defines a JSON array
-        '''
+        """
         with RuleContext(self, UnparserRule(name="arr", parent=parent)) as current:
             # first list -> minimum depth constraints
             # second list -> probability weights (delete second element for no empty option)
@@ -145,13 +147,13 @@ class JSONGenerator(Generator):
     arr.min_depth = 0
 
     def value(self, parent=None):
-        '''
+        """
         Decides what kind of JSON value to provide (string, number, obj, etc.)
 
-        '''
+        """
         with RuleContext(self, UnparserRule(name="value", parent=parent)) as current:
             # first list -> minimum depth constraints
-            # second list -> probability weights 
+            # second list -> probability weights
             # weights incides: 0 - STRING, 1 - NUMBER, 2 - obj, 3 - arr, 4 - "true", 5 - "false". 6 - "null"
             with AlternationContext(
                 self, [1, 2, 1, 1, 0, 0, 0], [10, 5, 10, 10, 1, 1, 1]
@@ -162,17 +164,17 @@ class JSONGenerator(Generator):
                     choice0
                 ]
                 if src is not None:
-                    UnlexerRule(src=src, parent=current) # emit literal
+                    UnlexerRule(src=src, parent=current)  # emit literal
                 else:
-                    rule(parent=current) # generate structured value
+                    rule(parent=current)  # generate structured value
             return current
 
     value.min_depth = 0
 
     def STRING(self, parent=None):
-        '''
+        """
         Emits a string
-        '''
+        """
         with RuleContext(self, UnlexerRule(name="STRING", parent=parent)) as current:
             UnlexerRule(src='"', parent=current)
             if self._max_depth >= 1:
@@ -188,9 +190,9 @@ class JSONGenerator(Generator):
     STRING.min_depth = 0
 
     def ESC(self, parent=None):
-        '''
+        """
         Emits a backslash-escaped character
-        '''
+        """
         with RuleContext(self, UnlexerRule(name="ESC", parent=parent)) as current:
             UnlexerRule(src="\\", parent=current)
             # first list -> minimum depth constraints
@@ -211,9 +213,9 @@ class JSONGenerator(Generator):
     ESC.min_depth = 1
 
     def UNICODE(self, parent=None):
-        '''
+        """
         Emits a Unicode escape sequence
-        '''
+        """
         with RuleContext(self, UnlexerRule(name="UNICODE", parent=parent)) as current:
             UnlexerRule(src="u", parent=current)
             self.HEX(parent=current)
@@ -235,9 +237,9 @@ class JSONGenerator(Generator):
     HEX.min_depth = 0
 
     def SAFECODEPOINT(self, parent=None):
-        '''
+        """
         Emits a printable character (doesn't need escaping)
-        '''
+        """
         with RuleContext(
             self, UnlexerRule(name="SAFECODEPOINT", parent=parent)
         ) as current:
@@ -249,9 +251,9 @@ class JSONGenerator(Generator):
     SAFECODEPOINT.min_depth = 0
 
     def NUMBER(self, parent=None):
-        '''
+        """
         Emits a number (integer or float)
-        '''
+        """
         with RuleContext(self, UnlexerRule(name="NUMBER", parent=parent)) as current:
             if self._max_depth >= 0:
                 for _ in self._model.quantify(current, 0, min=0, max=1):
@@ -274,9 +276,9 @@ class JSONGenerator(Generator):
     NUMBER.min_depth = 1
 
     def INT(self, parent=None):
-        '''
+        """
         Emits an integer, either 0 or starting with 1-9
-        '''
+        """
         with RuleContext(self, UnlexerRule(name="INT", parent=parent)) as current:
             with AlternationContext(self, [0, 0], [1, 1]) as weights0:
                 choice0 = self._model.choice(current, 0, weights0)
@@ -373,12 +375,13 @@ class JSONGenerator(Generator):
         ),
     }
 
+
 class GrammarBasedFuzzer(Fuzzer):
     @contextmanager
     def get_context(self, num_inputs):  # type: ignore
         self.inputs = []
         test_client = self.flask_app.test_client()
-    
+
         for _ in range(num_inputs):
             try:
                 generator = JSONGenerator()
@@ -387,8 +390,9 @@ class GrammarBasedFuzzer(Fuzzer):
                 self.inputs.append(out)
             except RecursionError:
                 continue
-        
+
         yield (test_client, self.inputs)
+
 
 if __name__ == "__main__":
     app = Flask(__name__)
