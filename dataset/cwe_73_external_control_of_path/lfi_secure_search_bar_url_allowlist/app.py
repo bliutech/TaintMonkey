@@ -1,5 +1,4 @@
 from flask import request, Flask, redirect, url_for
-from werkzeug.security import safe_join
 
 app = Flask(__name__)
 
