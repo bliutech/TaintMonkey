@@ -7,9 +7,6 @@ app = Flask(__name__)
 def open_file_command(file):
     return f"cat {file}"
 
-def is_safe_path(path):
-    return re.fullmatch(r"^[a-zA-Z0-9_.-]+$", path)
-
 @app.get("/insecure")
 def insecure_handler():
     file = request.args.get("file") or "example.txt"
@@ -17,20 +14,6 @@ def insecure_handler():
     exit_code = os.system(open_file_command(file))
     
     # os.system = 0 means a success
-    if exit_code == 0:
-        return "Command executed successfully"
-    else:
-        return f"Command exit code failed", 500
-    
-@app.get("/secure")
-def secure_handler():
-    file = request.args.get("file") or "example.txt"
-    
-    if not is_safe_path(file):
-        return "Invalid file path", 400
-    
-    exit_code = os.system(open_file_command(file))
-    
     if exit_code == 0:
         return "Command executed successfully"
     else:
