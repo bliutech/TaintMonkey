@@ -58,6 +58,10 @@ def type_check(orig_f: Callable, new_f: Callable):
     orig_sig = inspect.getfullargspec(orig_f)
     new_sig = inspect.getfullargspec(new_f)
 
+    #Print sigs (see difference in annotations)
+    print(orig_sig)
+    print(new_sig)
+
     # Remove "self" from argument list. For the purposes of monkey patching,
     # we do not care if it type checks (does not matter).
     orig_args = [arg for arg in filter(lambda x: x != "self", orig_sig.args)]
@@ -73,6 +77,8 @@ def type_check(orig_f: Callable, new_f: Callable):
     for o, n in zip(orig_args, new_args):
         orig_type = orig_sig.annotations.get(o, object)
         new_type = new_sig.annotations.get(n, object)
+        #This is the issues, it resolves to issubclass(<class 'str'>, str) which casts an error
+        print("GURT", orig_type, "YO", new_type)
         if not issubclass(new_type, orig_type):
             raise PatchException(
                 f"Argument types do not match. {new_f.__name__}(... {n} ...): {new_type} \u2288 {orig_f.__name__}(... {o} ...): {orig_type}"
