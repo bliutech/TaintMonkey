@@ -29,28 +29,49 @@ SOURCES = []
 SANITIZERS = []
 SINKS = []
 
-import dataset.cwe_434_unrestricted_file.testcase1_double_extension.app 
+import dataset.cwe_434_unrestricted_file.testcase1_double_extension.app
 
 from werkzeug.datastructures import FileStorage
 
 
-old_get_filename = dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.get_filename
-@patch_function("dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.get_filename")
+old_get_filename = (
+    dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.get_filename
+)
+
+
+@patch_function(
+    "dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.get_filename"
+)
 def new_get_filename(file):
     return TaintedStr(old_get_filename(file))
 
-old_safe_wrapper = dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.safe_wrapper
-@patch_function("dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.safe_wrapper")
+
+old_safe_wrapper = (
+    dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.safe_wrapper
+)
+
+
+@patch_function(
+    "dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.safe_wrapper"
+)
 def new_safe_wrapper(file, filename: TaintedStr):
     if filename.is_tainted():
         raise TaintException("potential vulnerability")
     return old_safe_wrapper(file, filename)
 
-old_is_safe_filename = dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.is_safe_filename
-@patch_function("dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.is_safe_filename")
+
+old_is_safe_filename = (
+    dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.is_safe_filename
+)
+
+
+@patch_function(
+    "dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.is_safe_filename"
+)
 def new_is_safe_filename(filename: TaintedStr):
     filename.sanitize()
     return old_is_safe_filename(filename)
+
 
 @pytest.fixture()
 def app():
@@ -60,13 +81,17 @@ def app():
 
     yield app
 
+
 @pytest.fixture()
 def client(app):
     return app.test_client()
 
+
 @pytest.fixture()
 def fuzzer(app):
-    return DictionaryFuzzer(app, "plugins/cwe_434_unrestricted_file_plugin1/dictionary.txt")
+    return DictionaryFuzzer(
+        app, "plugins/cwe_434_unrestricted_file_plugin1/dictionary.txt"
+    )
 
 
 def test_fuzz(fuzzer):
@@ -77,11 +102,11 @@ def test_fuzz(fuzzer):
         for data in inputs:
             print(f"[Fuzz Attempt {counter}] {data}")
 
-            file_data = {
-                'file': (io.BytesIO(b'image data'), TaintedStr(data))
-            }
+            file_data = {"file": (io.BytesIO(b"image data"), TaintedStr(data))}
 
-            res = client.post('/insecure/upload', data=file_data, content_type='multipart/form-data')
+            res = client.post(
+                "/insecure/upload", data=file_data, content_type="multipart/form-data"
+            )
             print(res.text)
 
             counter += 1
