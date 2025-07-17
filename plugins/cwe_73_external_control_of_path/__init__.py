@@ -36,26 +36,28 @@ SANITIZERS = ["werkzeug.security.safe_join"]
 SINKS = ["open"]
 
 # Monkey patching
-old_safe_join = werkzeug.security.safe_join
+#UNCOMMENT TO SEE ERROR WITH UNIONS AND RETURN VALUES
+"""old_safe_join = werkzeug.security.safe_join
 @patch_function("werkzeug.security.safe_join")
-def new_safe_join(directory: str, *pathnames: str) -> str | None:
+def new_safe_join(directory: str, *pathnames: TaintedStr) -> TaintedStr | None:
     for pathname in pathnames:
         if isinstance(pathname, TaintedStr):
             pathname.sanitize()
-    return old_safe_join(directory, *pathnames)
+    return old_safe_join(directory, *pathnames)"""
 
-#This was my temporary fix that bypasses the harder monkey patching shown above
-"""old_open = builtins.open
+
+old_open = builtins.open
 @patch_function("builtins.open")
 def new_open(file: TaintedStr, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None):
     if isinstance(file, TaintedStr) and file.is_tainted():
         raise TaintException("potential vulnerability")
-    return old_open(file, mode, buffering, encoding, errors, newline, closefd, opener)"""
+    return old_open(file, mode, buffering, encoding, errors, newline, closefd, opener)
 
 
 # Patch utility functions
 import dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app
 
+#This was my temporary fix that bypasses the harder monkey patching shown above
 old_custom_safe_join = (
     dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app.custom_safe_join
 )
