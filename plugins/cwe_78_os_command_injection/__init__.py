@@ -44,7 +44,10 @@ import dataset.cwe_78_os_command_injection.testcase1_insecure_novalidation.app
 # Patch open_file_command function
 old_open_file_command = dataset.cwe_78_os_command_injection.testcase1_insecure_novalidation.app.open_file_command
 
-@patch_function("dataset.cwe_78_os_command_injection.testcase1_insecure_novalidation.app.open_file_command")
+
+@patch_function(
+    "dataset.cwe_78_os_command_injection.testcase1_insecure_novalidation.app.open_file_command"
+)
 def new_open_file_command(file: TaintedStr):
     return TaintedStr(old_open_file_command(file))
 
@@ -52,7 +55,9 @@ def new_open_file_command(file: TaintedStr):
 # https://flask.palletsprojects.com/en/stable/testing/
 @pytest.fixture()
 def app():
-    from dataset.cwe_78_os_command_injection.testcase1_insecure_novalidation.app import app
+    from dataset.cwe_78_os_command_injection.testcase1_insecure_novalidation.app import (
+        app,
+    )
 
     register_taint_client(app)
 
@@ -74,9 +79,11 @@ def test_taint_exception(client):
     with pytest.raises(TaintException):
         client.get("/insecure?file=/etc/passwd")
 
+
 def test_command_injection(client):
     with pytest.raises(TaintException):
         client.get("/insecure?file=example.txt;ls")
+
 
 def test_fuzz(fuzzer):
     from urllib.parse import urlencode
