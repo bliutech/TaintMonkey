@@ -14,8 +14,8 @@ From the root of the repository, run the following.
 PYTHONPATH=. python3 plugins/cwe_938_unvalidated_redirects_and_forwards/__init__.py
 ```
 """
-import pytest
 
+import pytest
 from taintmonkey import TaintException
 from taintmonkey.client import register_taint_client
 from taintmonkey.fuzzer import DictionaryFuzzer
@@ -24,33 +24,42 @@ from taintmonkey.patch import patch_function
 import flask, sys
 
 SOURCES = ["get_url()"]
-
 SANITIZERS = ["check_allow_list"]
-
 SINKS = ["redirect_to"]
 
 import dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app
 
+# Sink Patch
+old_redirect = dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.redirect_to
 
-#Sink Patch
-old_redirect= dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.redirect_to
-@patch_function("dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.redirect_to")
+
+@patch_function(
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.redirect_to"
+)
 def new_redirect(url: TaintedStr):
     if url.is_tainted():
         raise TaintException("potential vulnerability")
-    return  old_redirect(url)
+    return old_redirect(url)
 
 
-#Source Patch
+# Source Patch
 old_get_url = dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.get_url
-@patch_function("dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.get_url")
+
+
+@patch_function(
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.get_url"
+)
 def new_get_url():
     return TaintedStr(old_get_url())
 
 
-#Santizer Patch
+# Santizer Patch
 old_check_allow_list = dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.check_allow_list
-@patch_function("dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.check_allow_list")
+
+
+@patch_function(
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.check_allow_list"
+)
 def new_check_allow_list(url: TaintedStr):
     url.sanitize()
     return old_check_allow_list
@@ -59,7 +68,10 @@ def new_check_allow_list(url: TaintedStr):
 # https://flask.palletsprojects.com/en/stable/testing/
 @pytest.fixture()
 def app():
-    from dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app import app
+    from dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app import (
+        app,
+    )
+
     register_taint_client(app)
     yield app
 
@@ -72,7 +84,9 @@ def client(app):
 @pytest.fixture()
 def fuzzer(app):
     # Corpus from https://hacktricks.boitatech.com.br/pentesting-web/open-redirect
-    return DictionaryFuzzer(app, "plugins/cwe_938_unvalidated_redirects_and_forwards/dictionary.txt")
+    return DictionaryFuzzer(
+        app, "plugins/cwe_938_unvalidated_redirects_and_forwards/dictionary.txt"
+    )
 
 
 def test_taint_exception(client):
