@@ -13,6 +13,8 @@ PYTHONPATH=. python3 plugins/cwe_78_os_command_injection/__init__.py
 """
 
 import pytest
+import os
+import sys
 
 from taintmonkey import TaintException
 from taintmonkey.client import register_taint_client
@@ -38,16 +40,13 @@ def new_popen(cmd: TaintedStr, mode: str = "r", buffering: int = -1) -> os._wrap
         raise TaintException("potential vulnerability")
     return old_popen(cmd, mode, buffering)
 
+# Import the vulnerable application
+import dataset.cwe_78_os_command_injection.insecure_novalidation.app as vulnerable_app
 
-import dataset.cwe_78_os_command_injection.testcase1_insecure_novalidation.app
+# Store original function for restoration
+old_open_file_command = vulnerable_app.open_file_command
 
-# Patch open_file_command function
-old_open_file_command = dataset.cwe_78_os_command_injection.testcase1_insecure_novalidation.app.open_file_command
-
-
-@patch_function(
-    "dataset.cwe_78_os_command_injection.testcase1_insecure_novalidation.app.open_file_command"
-)
+@patch_function("dataset.cwe_78_os_command_injection.insecure_novalidation.app.open_file_command")
 def new_open_file_command(file: TaintedStr):
     return TaintedStr(old_open_file_command(file))
 
@@ -55,14 +54,9 @@ def new_open_file_command(file: TaintedStr):
 # https://flask.palletsprojects.com/en/stable/testing/
 @pytest.fixture()
 def app():
-    from dataset.cwe_78_os_command_injection.testcase1_insecure_novalidation.app import (
-        app,
-    )
-
+    app = vulnerable_app.app
     register_taint_client(app)
-
-    yield app
-
+    return app
 
 @pytest.fixture()
 def client(app):
@@ -71,7 +65,6 @@ def client(app):
 
 @pytest.fixture()
 def fuzzer(app):
-    # Corpus from https://hacktricks.boitatech.com.br/pentesting-web/command-injection
     return DictionaryFuzzer(app, "plugins/cwe_78_os_command_injection/dictionary.txt")
 
 
@@ -92,11 +85,9 @@ def test_fuzz(fuzzer):
     with fuzzer.get_context() as (client, inputs):
         for data in inputs:
             print(f"[Fuzz Attempt {counter}] {data}")
-            # Demonstrating fuzzer capabilities
             with pytest.raises(TaintException):
                 client.get(f"/insecure?{urlencode({'file': data})}")
             counter += 1
-
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__]))
