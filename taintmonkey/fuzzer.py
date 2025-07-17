@@ -8,8 +8,10 @@
 
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
+from io import StringIO
 import random
 import os
+import sys
 
 from flask import Flask
 
@@ -22,17 +24,16 @@ from grammarinator.runtime import *
 
 
 class Fuzzer(ABC):
-    def __init__(self, app: Flask, corpus: str):
+    def __init__(self, app: Flask, corpus: str = None):
         self.flask_app = app
         self.corpus = corpus
         self.inputs = []
-        # self.load_corpus()
 
-        # def load_corpus(self):
-        #     if not os.path.exists(self.corpus):
-        #         raise FileNotFoundError(f"Corpus file not found: {self.corpus}")
-        #     with open(self.corpus, "r") as f:
-        #         self.inputs = [line.strip() for line in f if line.strip()]
+    def load_corpus(self):
+        if not os.path.exists(self.corpus):
+            raise FileNotFoundError(f"Corpus file not found: {self.corpus}")
+        with open(self.corpus, "r") as f:
+            self.inputs = [line.strip() for line in f if line.strip()]
 
     @abstractmethod
     def get_context(self):
@@ -43,6 +44,7 @@ class DictionaryFuzzer(Fuzzer):
     @contextmanager
     def get_context(self):  # type: ignore
         # Choose a random input from the dictionary
+        self.load_corpus()
         random.shuffle(self.inputs)
         test_client = self.flask_app.test_client()
 
@@ -57,26 +59,40 @@ class JSONGenerator(Generator):
     EOF.min_depth = 0
 
     def json(self, parent=None):
+        '''
+        Defines top-level JSON structure
+        Currently it can be any value (object, array, string, etc.)
+        If you want to enforce top-level as always an object, replace:
+        self.value(...) --> self.obj(...)
+        '''
         with RuleContext(self, UnparserRule(name="json", parent=parent)) as current:
-            self.value(parent=current)
+            self.obj(parent=current)
             self.EOF(parent=current)
             return current
 
     json.min_depth = 1
 
     def obj(self, parent=None):
+        '''
+        Defines a JSON object
+        '''
         with RuleContext(self, UnparserRule(name="obj", parent=parent)) as current:
-            with AlternationContext(self, [2, 0], [1, 1]) as weights0:
+            # first list -> minimum depth constraints
+            # second list -> probability weights (delete second element for no empty option)
+            with AlternationContext(self, [2, 0], [10, 1]) as weights0:
                 choice0 = self._model.choice(current, 0, weights0)
                 if choice0 == 0:
+                    # Non-empty object branch
                     UnlexerRule(src="{", parent=current)
                     self.pair(parent=current)
                     if self._max_depth >= 2:
-                        for _ in self._model.quantify(current, 0, min=0, max=inf):
+                        # Adjust number of pairs by changing min and max
+                        for _ in self._model.quantify(current, 0, min=3, max=inf):
                             UnlexerRule(src=",", parent=current)
                             self.pair(parent=current)
                     UnlexerRule(src="}", parent=current)
                 elif choice0 == 1:
+                    # Empty object ('{}') branch
                     UnlexerRule(src="{", parent=current)
                     UnlexerRule(src="}", parent=current)
             return current
@@ -84,27 +100,44 @@ class JSONGenerator(Generator):
     obj.min_depth = 0
 
     def pair(self, parent=None):
+        '''
+        Defines a key-value pair
+        '''
         with RuleContext(self, UnparserRule(name="pair", parent=parent)) as current:
-            self.STRING(parent=current)
+            # Optional: provide a key corpus
+            # Adjust probability to adjust how often used
+            if random.random() < 0.5:
+                key = random.choice(["username", "password", "csrf_token", "new_password"])
+                UnlexerRule(src=f'"{key}"', parent=current)
+            else:
+                self.STRING(parent=current) # key
             UnlexerRule(src=":", parent=current)
-            self.value(parent=current)
+            self.value(parent=current) # value
             return current
 
     pair.min_depth = 1
 
     def arr(self, parent=None):
+        '''
+        Defines a JSON array
+        '''
         with RuleContext(self, UnparserRule(name="arr", parent=parent)) as current:
-            with AlternationContext(self, [1, 0], [1, 1]) as weights0:
+            # first list -> minimum depth constraints
+            # second list -> probability weights (delete second element for no empty option)
+            with AlternationContext(self, [1, 0], [10, 1]) as weights0:
                 choice0 = self._model.choice(current, 0, weights0)
                 if choice0 == 0:
+                    # Non-empty array
                     UnlexerRule(src="[", parent=current)
                     self.value(parent=current)
                     if self._max_depth >= 1:
-                        for _ in self._model.quantify(current, 0, min=0, max=inf):
+                        # Adjust number of array elements by changing min and max
+                        for _ in self._model.quantify(current, 0, min=2, max=inf):
                             UnlexerRule(src=",", parent=current)
                             self.value(parent=current)
                     UnlexerRule(src="]", parent=current)
                 elif choice0 == 1:
+                    # Empty array
                     UnlexerRule(src="[", parent=current)
                     UnlexerRule(src="]", parent=current)
             return current
@@ -112,9 +145,16 @@ class JSONGenerator(Generator):
     arr.min_depth = 0
 
     def value(self, parent=None):
+        '''
+        Decides what kind of JSON value to provide (string, number, obj, etc.)
+
+        '''
         with RuleContext(self, UnparserRule(name="value", parent=parent)) as current:
+            # first list -> minimum depth constraints
+            # second list -> probability weights 
+            # weights incides: 0 - STRING, 1 - NUMBER, 2 - obj, 3 - arr, 4 - "true", 5 - "false". 6 - "null"
             with AlternationContext(
-                self, [1, 2, 1, 1, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1]
+                self, [1, 2, 1, 1, 0, 0, 0], [10, 5, 10, 10, 1, 1, 1]
             ) as weights0:
                 choice0 = self._model.choice(current, 0, weights0)
                 src = [None, None, None, None, "true", "false", "null"][choice0]
@@ -122,19 +162,24 @@ class JSONGenerator(Generator):
                     choice0
                 ]
                 if src is not None:
-                    UnlexerRule(src=src, parent=current)
+                    UnlexerRule(src=src, parent=current) # emit literal
                 else:
-                    rule(parent=current)
+                    rule(parent=current) # generate structured value
             return current
 
     value.min_depth = 0
 
     def STRING(self, parent=None):
+        '''
+        Emits a string
+        '''
         with RuleContext(self, UnlexerRule(name="STRING", parent=parent)) as current:
             UnlexerRule(src='"', parent=current)
             if self._max_depth >= 1:
+                # first list -> minimum depth constraints
+                # second list -> probability weights (delete second element for no empty option)
                 for _ in self._model.quantify(current, 0, min=0, max=inf):
-                    with AlternationContext(self, [1, 1], [1, 1]) as weights0:
+                    with AlternationContext(self, [0, 2], [1, 3]) as weights0:
                         choice0 = self._model.choice(current, 0, weights0)
                         [self.ESC, self.SAFECODEPOINT][choice0](parent=current)
             UnlexerRule(src='"', parent=current)
@@ -143,22 +188,32 @@ class JSONGenerator(Generator):
     STRING.min_depth = 0
 
     def ESC(self, parent=None):
+        '''
+        Emits a backslash-escaped character
+        '''
         with RuleContext(self, UnlexerRule(name="ESC", parent=parent)) as current:
             UnlexerRule(src="\\", parent=current)
+            # first list -> minimum depth constraints
+            # second list -> probability weights (delete second element for no empty option)
             with AlternationContext(self, [0, 2], [1, 1]) as weights0:
                 choice0 = self._model.choice(current, 0, weights0)
                 if choice0 == 0:
+                    # single character escape sequence
                     UnlexerRule(
                         src=self._model.charset(current, 0, self._charsets[1]),
                         parent=current,
                     )
                 elif choice0 == 1:
+                    # Unicode escape sequence
                     self.UNICODE(parent=current)
             return current
 
-    ESC.min_depth = 0
+    ESC.min_depth = 1
 
     def UNICODE(self, parent=None):
+        '''
+        Emits a Unicode escape sequence
+        '''
         with RuleContext(self, UnlexerRule(name="UNICODE", parent=parent)) as current:
             UnlexerRule(src="u", parent=current)
             self.HEX(parent=current)
@@ -170,6 +225,7 @@ class JSONGenerator(Generator):
     UNICODE.min_depth = 1
 
     def HEX(self, parent=None):
+        # Emits a single hexadecimal character
         with RuleContext(self, UnlexerRule(name="HEX", parent=parent)) as current:
             UnlexerRule(
                 src=self._model.charset(current, 0, self._charsets[2]), parent=current
@@ -179,6 +235,9 @@ class JSONGenerator(Generator):
     HEX.min_depth = 0
 
     def SAFECODEPOINT(self, parent=None):
+        '''
+        Emits a printable character (doesn't need escaping)
+        '''
         with RuleContext(
             self, UnlexerRule(name="SAFECODEPOINT", parent=parent)
         ) as current:
@@ -190,6 +249,9 @@ class JSONGenerator(Generator):
     SAFECODEPOINT.min_depth = 0
 
     def NUMBER(self, parent=None):
+        '''
+        Emits a number (integer or float)
+        '''
         with RuleContext(self, UnlexerRule(name="NUMBER", parent=parent)) as current:
             if self._max_depth >= 0:
                 for _ in self._model.quantify(current, 0, min=0, max=1):
@@ -212,6 +274,9 @@ class JSONGenerator(Generator):
     NUMBER.min_depth = 1
 
     def INT(self, parent=None):
+        '''
+        Emits an integer, either 0 or starting with 1-9
+        '''
         with RuleContext(self, UnlexerRule(name="INT", parent=parent)) as current:
             with AlternationContext(self, [0, 0], [1, 1]) as weights0:
                 choice0 = self._model.choice(current, 0, weights0)
@@ -233,6 +298,7 @@ class JSONGenerator(Generator):
     INT.min_depth = 0
 
     def EXP(self, parent=None):
+        # Emits an exponential part
         with RuleContext(self, UnlexerRule(name="EXP", parent=parent)) as current:
             UnlexerRule(
                 src=self._model.charset(current, 0, self._charsets[7]), parent=current
@@ -254,6 +320,7 @@ class JSONGenerator(Generator):
     EXP.min_depth = 0
 
     def WS(self, parent=None):
+        # Emits whitespace characters
         with RuleContext(self, UnlexerRule(name="WS", parent=parent)) as current:
             if self._max_depth >= 0:
                 for _ in self._model.quantify(current, 0, min=1, max=inf):
@@ -306,35 +373,27 @@ class JSONGenerator(Generator):
         ),
     }
 
-
 class GrammarBasedFuzzer(Fuzzer):
     @contextmanager
     def get_context(self, num_inputs):  # type: ignore
-        # Choose a random input from the dictionary
-        factory = DefaultGeneratorFactory(generator_class=JSONGenerator)
-        tool = GeneratorTool(
-            generator_factory=factory,
-            out_format="",
-            rule="json",
-            max_depth=5,
-            keep_trees=False,
-            cleanup=False,
-        )
-
         self.inputs = []
         test_client = self.flask_app.test_client()
-
-        for index in range(num_inputs):
-            out = tool.create(index)
-            self.inputs.append(out)
-
+    
+        for _ in range(num_inputs):
+            try:
+                generator = JSONGenerator()
+                generator._max_depth = 10
+                out = generator.json()
+                self.inputs.append(out)
+            except RecursionError:
+                continue
+        
         yield (test_client, self.inputs)
-
 
 if __name__ == "__main__":
     app = Flask(__name__)
-    g = GrammarBasedFuzzer(app, "test_corpus.txt")
+    g = GrammarBasedFuzzer(app)
 
-    with g.get_context(5) as (_, inputs):
+    with g.get_context(20) as (_, inputs):
         for input in inputs:
             print(input)
