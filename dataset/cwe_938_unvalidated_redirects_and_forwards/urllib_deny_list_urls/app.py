@@ -11,11 +11,7 @@ def unvalidated_redirect():
     redirect_url = get_url()
     if not redirect_url:
         return "No URL provided", 400
-<<<<<<< HEAD
-    return redirect_to(redirect_url)
-=======
     return redirect(redirect_url)
->>>>>>> 7f51055596869bd1e4dc22a1408bbd481c6d4308
 
 
 @app.route("/validated_redirect", methods=["GET"])
@@ -26,11 +22,7 @@ def validated_redirect():
         return "No URL provided", 400
 
     if check_deny_list(redirect_url):
-<<<<<<< HEAD
-        return redirect_to(redirect_url)
-=======
         return redirect(redirect_url)
->>>>>>> 7f51055596869bd1e4dc22a1408bbd481c6d4308
 
     return "Invalid redirect URL", 400
 
@@ -38,11 +30,6 @@ def validated_redirect():
 def get_url():
     return request.args.get("url")
 
-<<<<<<< HEAD
-def redirect_to(url):
-    return redirect(url)
-=======
->>>>>>> 7f51055596869bd1e4dc22a1408bbd481c6d4308
 
 def check_deny_list(url):
     # urllib used to check for denyable redirect links
