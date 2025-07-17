@@ -12,7 +12,11 @@ def unvalidated_redirect():
     redirect_url = get_url()
     if not redirect_url:
         return "No URL provided", 400
+<<<<<<< HEAD
     return redirect_to(redirect_url)
+=======
+    return redirect(redirect_url)
+>>>>>>> 7f51055596869bd1e4dc22a1408bbd481c6d4308
 
 
 @app.route("/validated_redirect", methods=["GET"])
@@ -21,8 +25,15 @@ def validated_redirect():
 
     if not redirect_url:
         return "No URL provided", 400
+<<<<<<< HEAD
     if check_allow_list(redirect_url):
         return redirect_to(redirect_url)
+=======
+
+    if check_allow_list(redirect_url):
+        return redirect(redirect_url)
+
+>>>>>>> 7f51055596869bd1e4dc22a1408bbd481c6d4308
     return "Invalid redirect URL", 400
 
 
@@ -30,6 +41,7 @@ def get_url():
     return request.args.get("url")
 
 
+<<<<<<< HEAD
 def redirect_to(url):
     return redirect(url)
 
@@ -37,6 +49,12 @@ def redirect_to(url):
 def check_allow_list(url):
     # urllib used to check for allowable redirect links
     parsed_url = urlparse(url)
+=======
+def check_allow_list(url):
+    # urllib used to check for allowable redirect links
+    parsed_url = urlparse(url)
+
+>>>>>>> 7f51055596869bd1e4dc22a1408bbd481c6d4308
     return (
         (parsed_url.scheme == "http" or parsed_url.scheme == "https")
         and parsed_url.netloc in ALLOW_LIST
