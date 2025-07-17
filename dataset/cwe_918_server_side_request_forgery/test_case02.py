@@ -4,8 +4,7 @@ from urllib.parse import urlparse
 
 app = Flask(__name__)
 
-ALLOW_LIST = {"www.allowed.com", "www.safe.com", "www.secure.com"}
-ALLOW_PATHS = {"/safe", "/allowed", "/secure", "", "/"}
+DENY_LIST = {"www.malicious.com", "www.evil.com", "www.unsafe.com"}
 
 @app.route("/insecure")
 def insecure_route():
@@ -27,13 +26,12 @@ def secure_route():
     return "Url is not allowed"
 
 def url_is_allowed(url):
-# urllib used to check for allowable links
+# urllib used to check for denyable links
     parsed_url = urlparse(url)
 
     return (
         (parsed_url.scheme == "http" or parsed_url.scheme == "https")
-        and parsed_url.netloc in ALLOW_LIST
-        and parsed_url.path in ALLOW_PATHS
+        and parsed_url.netloc not in DENY_LIST
     )
 
 if __name__ == "__main__":
