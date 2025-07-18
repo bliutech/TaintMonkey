@@ -55,6 +55,7 @@ def new_open_file_command(file: TaintedStr):
 @pytest.fixture()
 def app():
     app = vulnerable_app.app
+
     register_taint_client(app)
     return app
 
