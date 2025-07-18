@@ -1,0 +1,12 @@
+__import__('os').system('ls')
+__import__('os').getcwd()
+__import__('subprocess').check_output(['ls'])
+open('/etc/passwd').read()
+exec('import os')
+eval('print("hello")')
+os.system('ls')
+os.popen('ls').read()
+subprocess.run(['ls'])
+__builtins__.__import__('os')
+__builtins__.eval('__import__("os")')
+__class__.__init__.__globals__['__builtins__']
