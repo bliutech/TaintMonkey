@@ -9,25 +9,19 @@ DENY_LIST = {"www.malicious.com", "www.evil.com", "www.unsafe.com"}
 
 @app.route("/insecure")
 def insecure_route():
-    url = request.args.get("url")
+    url = get_url()
     if not url:
         return "Invalid url input", 400
-    url = urlparse(url)
-    connection = http.client.HTTPConnection(url.netloc, url.port)
-    connection.request("GET", url.path)
-    return connection.getresponse()
+    return http_request(url)
 
 
 @app.route("/secure")
 def secure_route():
-    url = request.args.get("url")
+    url = get_url()
     if not url:
         return "Invalid url input", 400
     if check_deny_list(url):
-        url = urlparse(url)
-        connection = http.client.HTTPConnection(url.netloc, url.port)
-        connection.request("GET", url.path)
-        return connection.getresponse()
+        return http_request(url)
     return "Url is not allowed"
 
 
@@ -37,6 +31,17 @@ def check_deny_list(url):
     return (
         parsed_url.scheme == "http" or parsed_url.scheme == "https"
     ) and parsed_url.netloc not in DENY_LIST
+
+
+def get_url():
+    return request.args.get("url")
+
+
+def http_request(url):
+    url = urlparse(url)
+    connection = http.client.HTTPConnection(url.netloc, url.port)
+    connection.request("GET", url.path)
+    return connection.getresponse()
 
 
 if __name__ == "__main__":

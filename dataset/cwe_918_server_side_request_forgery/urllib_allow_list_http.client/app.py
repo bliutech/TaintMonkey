@@ -10,25 +10,19 @@ ALLOW_PATHS = {"/safe", "/allowed", "/secure", "", "/"}
 
 @app.route("/insecure")
 def insecure_route():
-    url = request.args.get("url")
+    url = get_url()
     if not url:
         return "Invalid url input", 400
-    url = urlparse(url)
-    connection = http.client.HTTPConnection(url.netloc, url.port)
-    connection.request("GET", url.path)
-    return connection.getresponse()
+    return http_request(url)
 
 
 @app.route("/secure")
 def secure_route():
-    url = request.args.get("url")
+    url = get_url()
     if not url:
         return "Invalid url input", 400
     if check_allow_list(url):
-        url = urlparse(url)
-        connection = http.client.HTTPConnection(url.netloc, url.port)
-        connection.request("GET", url.path)
-        return connection.getresponse()
+        return http_request(url)
     return "Url is not allowed"
 
 
@@ -40,6 +34,17 @@ def check_allow_list(url):
         and parsed_url.netloc in ALLOW_LIST
         and parsed_url.path in ALLOW_PATHS
     )
+
+
+def get_url():
+    return request.args.get("url")
+
+
+def http_request(url):
+    url = urlparse(url)
+    connection = http.client.HTTPConnection(url.netloc, url.port)
+    connection.request("GET", url.path)
+    return connection.getresponse()
 
 
 if __name__ == "__main__":
