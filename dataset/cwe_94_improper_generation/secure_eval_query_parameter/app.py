@@ -3,6 +3,7 @@ import math
 
 app = Flask(__name__)
 
+
 def safe_eval(expression):
     safe_globals = {"__builtins__": None}
     safe_locals = {
@@ -25,16 +26,15 @@ def safe_eval(expression):
     except Exception as e:
         return "Error"
 
+
 @app.route("/calculate")
 def calculate_handler():
     expression = request.args.get("expr", "2+2")
-    
+
     result = safe_eval(expression)
-    
-    return jsonify({
-        "expression": expression,
-        "result": result
-    })
+
+    return jsonify({"expression": expression, "result": result})
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
