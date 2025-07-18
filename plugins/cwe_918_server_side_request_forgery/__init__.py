@@ -19,6 +19,7 @@ from taintmonkey.client import register_taint_client
 from taintmonkey.fuzzer import DictionaryFuzzer
 from taintmonkey.taint import TaintedStr
 from taintmonkey.patch import patch_function
+from urllib.parse import urlencode
 
 import sys
 
@@ -94,17 +95,13 @@ def fuzzer(app):
 
 def test_taint_exception(client):
     with pytest.raises(TaintException):
-        client.get("/insecure?url=https://evil.com/secure")
-
+        client.get(f"/insecure?{urlencode({'url': 'https://evil.com/secure'})}")
 
 def test_no_taint_exception(client):
     # Expect no exception
-    client.get("/secure?url=https://allowed.com/safe")
-
+    client.get(f"/secure?{urlencode({'url': 'https://allowed.com/safe'})}")
 
 def test_fuzz(fuzzer):
-    from urllib.parse import urlencode
-
     counter = 0
     with fuzzer.get_context() as (client, inputs):
         for data in inputs:
