@@ -97,9 +97,11 @@ def test_taint_exception(client):
     with pytest.raises(TaintException):
         client.get(f"/insecure?{urlencode({'url': 'https://evil.com/secure'})}")
 
+
 def test_no_taint_exception(client):
     # Expect no exception
     client.get(f"/secure?{urlencode({'url': 'https://allowed.com/safe'})}")
+
 
 def test_fuzz(fuzzer):
     counter = 0
