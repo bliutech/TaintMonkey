@@ -21,12 +21,12 @@ def secure_route():
     if not url:
         return "Invalid url input", 400
 
-    if url_is_allowed(url):
+    if check_allow_list(url):
         return requests.get(url).text
     
     return "Url is not allowed"
 
-def url_is_allowed(url):
+def check_allow_list(url):
 # urllib used to check for allowable links
     parsed_url = urlparse(url)
 
