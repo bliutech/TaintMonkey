@@ -65,15 +65,19 @@ def client(app):
 
 @pytest.fixture()
 def fuzzer(app):
-    return GrammarBasedFuzzer(app)
+    return GrammarBasedFuzzer(
+        app=app,
+        key_pool_frequency=0.5,
+        key_pool=["new_password", "csrf_token", "password", "username"],
+    )
 
 
 def test_fuzz(app, fuzzer):
     from urllib.parse import urlencode
 
     counter = 0
-    with fuzzer.get_context(100) as (attacker, inputs):
-        for data in inputs:
+    with fuzzer.get_context() as (attacker, input_generator):
+        for _, data in zip(range(20), input_generator):
             print(f"[Fuzz Attempt {counter}] {data}")
             victim = app.test_client()
             response = victim.post("/register?username=test&password=test")
