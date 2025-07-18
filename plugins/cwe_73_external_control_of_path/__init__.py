@@ -13,7 +13,6 @@ PYTHONPATH=. python3 plugins/cwe_78_os_command_injection/__init__.py
 """
 
 import builtins
-import os.path
 from urllib.parse import urlencode
 
 import pytest
@@ -38,7 +37,6 @@ SANITIZERS = ["werkzeug.security.safe_join"]
 SINKS = ["open"]
 
 # Monkey patching
-# UNCOMMENT TO SEE ERROR WITH UNIONS AND RETURN VALUES
 old_safe_join = werkzeug.security.safe_join
 
 

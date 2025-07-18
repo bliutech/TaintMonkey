@@ -9,8 +9,6 @@ This implementation is different in that it attempts to provide a patching
 interface outside of unit tests and allows for more arbitrary patching.
 """
 
-import re
-import typing
 from collections.abc import Callable
 from importlib import import_module
 import inspect
@@ -18,10 +16,6 @@ from types import ModuleType
 
 __all__ = ["patch_function", "patch_class"]
 
-from jinja2 import is_undefined
-from pydantic.v1.datetime_parse import standard_duration_re
-
-import taintmonkey
 from taintmonkey.taint import TaintedStr
 
 
