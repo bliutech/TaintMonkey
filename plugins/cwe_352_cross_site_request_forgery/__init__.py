@@ -74,7 +74,6 @@ def test_fuzz(app, fuzzer):
     counter = 0
     with fuzzer.get_context(100) as (attacker, inputs):
         for data in inputs:
-            print(type(data))
             print(f"[Fuzz Attempt {counter}] {data}")
             victim = app.test_client()
             response = victim.post("/register?username=test&password=test")
