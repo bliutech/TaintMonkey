@@ -100,7 +100,7 @@ def type_check(orig_f: Callable, new_f: Callable):
         # example: taintmonkey.taint.TaintedStr --> TaintedStr
         if "." in type_str:
             index = 0
-            for i in range(0, len(type_str)):
+            for i in range(len(type_str)):
                 if type_str[i] == ".":
                     index = i
             type_str = type_str[index + 1 :]
@@ -159,7 +159,7 @@ def type_check(orig_f: Callable, new_f: Callable):
                 raise PatchException(f"Number of union arguments do not match.")
 
             # Loop through
-            for i in range(0, len(orig_union_types)):
+            for i in range(len(orig_union_types)):
                 orig_union_type = orig_union_types[i]
                 new_union_type = new_union_types[i]
                 # Standardize annotations

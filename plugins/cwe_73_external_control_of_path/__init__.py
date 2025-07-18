@@ -70,6 +70,11 @@ def new_open(
 # Patch utility functions
 import dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app
 
+old_junk = dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app.junk
+@patch_function("dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app.junk")
+def new_junk(foo: str, bar: str, *args: int):
+    return old_junk()
+
 
 old_get_page_post = dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app.get_page_post
 
