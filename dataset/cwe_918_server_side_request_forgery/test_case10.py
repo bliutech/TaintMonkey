@@ -1,5 +1,5 @@
 from flask import Flask, request
-import requests
+import http.client
 from furl import furl
 
 app = Flask(__name__)
@@ -12,7 +12,11 @@ def insecure_route():
     if not url:
         return "Invalid url input", 400
 
-    return requests.get(url).text
+    url=furl(url)
+    connection=http.client.HTTPConnection(url.host, url.port)
+    connection.request("GET", url.pathstr)
+
+    return connection.getresponse()
 
 @app.route("/secure")
 def secure_route():
@@ -21,7 +25,11 @@ def secure_route():
         return "Invalid url input", 400
 
     if check_deny_list(url):
-        return requests.get(url).text
+        url=furl(url)
+        connection=http.client.HTTPConnection(url.host, url.port)
+        connection.request("GET", url.pathstr)
+
+        return connection.getresponse()
     
     return "Url is not allowed"
 

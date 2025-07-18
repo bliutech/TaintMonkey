@@ -1,6 +1,6 @@
 from flask import Flask, request
-import requests
-from furl import furl
+import http.client
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 
@@ -12,7 +12,11 @@ def insecure_route():
     if not url:
         return "Invalid url input", 400
 
-    return requests.get(url).text
+    url=urlparse(url)
+    connection=http.client.HTTPConnection(url.netloc, url.port)
+    connection.request("GET", url.path)
+
+    return connection.getresponse()
 
 @app.route("/secure")
 def secure_route():
@@ -21,17 +25,21 @@ def secure_route():
         return "Invalid url input", 400
 
     if check_deny_list(url):
-        return requests.get(url).text
+        url=urlparse(url)
+        connection=http.client.HTTPConnection(url.netloc, url.port)
+        connection.request("GET", url.path)
+
+        return connection.getresponse()
     
     return "Url is not allowed"
 
 def check_deny_list(url):
-# furl used to check for denyable links
-    parsed_url = furl(url)
+# urllib used to check for denyable links
+    parsed_url = urlparse(url)
 
     return (
         (parsed_url.scheme == "http" or parsed_url.scheme == "https")
-        and parsed_url.host not in DENY_LIST
+        and parsed_url.netloc not in DENY_LIST
     )
 
 if __name__ == "__main__":
