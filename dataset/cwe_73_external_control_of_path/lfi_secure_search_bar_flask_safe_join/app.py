@@ -38,8 +38,11 @@ def search_post():
     if safe_path is None:
         return "Outside of allowed directory"
 
-    with open(page, "r") as f:  # Sink
-        return f.read()
+    try:
+        with open(page, "r") as f:  # Sink
+            return f.read()
+    except FileNotFoundError:
+        return "404 FILE NOT FOUND"
 
 
 if __name__ == "__main__":

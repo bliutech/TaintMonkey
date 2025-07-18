@@ -13,9 +13,13 @@ def get_page(this_request):
 @app.get("/view")
 def view():
     page = get_page(request)  # Source
-    new_path = Path(APP_DIRECTORY) / page  # Another Source
+    absolute_path = Path(page).absolute()
+    if not absolute_path.is_relative_to(
+        APP_DIRECTORY
+    ):  # Fake sanitizer - doesn't actually help
+        return "File not allowed; outside of directory"
     try:
-        with open(new_path, "r") as f:  # Sink
+        with open(page, "r") as f:  # Sink
             return f.read()
     except FileNotFoundError:
         return "404 FILE NOT FOUND"

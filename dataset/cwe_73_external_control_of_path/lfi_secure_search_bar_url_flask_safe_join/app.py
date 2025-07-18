@@ -55,8 +55,11 @@ def view():
     if safe_path is None:
         return "Outside of allowed directory - Stop trying to URL inject >:("
 
-    with open(page, "r") as f:  # Sink
-        return f.read()
+    try:
+        with open(page, "r") as f:  # Sink
+            return f.read()
+    except FileNotFoundError:
+        return "404 FILE NOT FOUND"
 
 
 if __name__ == "__main__":

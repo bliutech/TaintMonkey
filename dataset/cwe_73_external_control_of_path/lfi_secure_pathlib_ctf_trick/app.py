@@ -2,7 +2,7 @@ from flask import request, Flask
 from pathlib import Path
 
 app = Flask(__name__)
-APP_DIRECTORY = app.root_path
+APP_DIRECTORY = Path(app.root_path).resolve()
 
 
 # Source
@@ -13,9 +13,13 @@ def get_page(this_request):
 @app.get("/view")
 def view():
     page = get_page(request)  # Source
-    new_path = Path(APP_DIRECTORY) / page  # Another Source
+    absolute_path = Path(page).absolute().resolve()
+    if not absolute_path.is_relative_to(
+        APP_DIRECTORY
+    ):  # Now acts as a sanitizer; tricky
+        return "File not allowed; outside of directory"
     try:
-        with open(new_path, "r") as f:  # Sink
+        with open(page, "r") as f:  # Sink
             return f.read()
     except FileNotFoundError:
         return "404 FILE NOT FOUND"

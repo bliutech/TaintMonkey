@@ -13,9 +13,14 @@ def get_page(this_request):
 @app.get("/view")
 def view():
     page = get_page(request)  # Source
-    new_path = os.path.join(APP_DIRECTORY, page)  # Another Source
-    with open(new_path, "r") as f:  # Sink
-        return f.read()
+    new_path = os.path.join(
+        APP_DIRECTORY, page
+    )  # Sink (user input in os-related function)
+    try:
+        with open(new_path, "r") as f:  # Sink
+            return f.read()
+    except FileNotFoundError:
+        return "404 FILE NOT FOUND"
 
 
 @app.get("/")

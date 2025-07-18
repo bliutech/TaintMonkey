@@ -33,8 +33,11 @@ def view():
         APP_DIRECTORY, new_path
     ):  # Not sure if this second sanitizer is necessary
         return "Path outside of directory"
-    with open(new_path, "r") as f:  # Sink
-        return f.read()
+    try:
+        with open(new_path, "r") as f:  # Sink
+            return f.read()
+    except FileNotFoundError:
+        return "404 FILE NOT FOUND"
 
 
 @app.get("/")

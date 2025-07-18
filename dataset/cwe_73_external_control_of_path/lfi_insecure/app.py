@@ -11,8 +11,11 @@ def get_page(this_request):
 @app.get("/view")
 def view():
     page = get_page(request)  # Source
-    with open(page, "r") as f:  # Sink
-        return f.read()
+    try:
+        with open(page, "r") as f:  # Sink
+            return f.read()
+    except FileNotFoundError:
+        return "404 FILE NOT FOUND"
 
 
 @app.get("/")

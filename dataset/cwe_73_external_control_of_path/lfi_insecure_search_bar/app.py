@@ -31,8 +31,11 @@ def search_get():
 @app.post("/search")
 def search_post():
     page = get_page(request)  # Source
-    with open(page, "r") as f:  # Sink
-        return f.read()
+    try:
+        with open(page, "r") as f:  # Sink
+            return f.read()
+    except FileNotFoundError:
+        return "404 FILE NOT FOUND"
 
 
 if __name__ == "__main__":

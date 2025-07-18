@@ -18,8 +18,11 @@ def view():
     if safe_path is None:
         return "Outside of allowed directory"
 
-    with open(page, "r") as f:  # Sink
-        return f.read()
+    try:
+        with open(safe_path, "r") as f:  # Sink
+            return f.read()
+    except FileNotFoundError:
+        return "404 FILE NOT FOUND"
 
 
 @app.get("/")
