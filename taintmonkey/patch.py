@@ -8,6 +8,7 @@ Inspired heavily by monkey patching capabilities in libraries like...
 This implementation is different in that it attempts to provide a patching
 interface outside of unit tests and allows for more arbitrary patching.
 """
+import re
 import typing
 from collections.abc import Callable
 from importlib import import_module
@@ -17,6 +18,10 @@ from types import ModuleType
 __all__ = ["patch_function", "patch_class"]
 
 from jinja2 import is_undefined
+from pydantic.v1.datetime_parse import standard_duration_re
+
+import taintmonkey
+from taintmonkey.taint import TaintedStr
 
 
 class PatchException(Exception):
@@ -61,6 +66,7 @@ def type_check(orig_f: Callable, new_f: Callable):
     # Properly check types in case of things like annotations
     import ast
     from typing import Union, get_origin, get_type_hints
+    import types
 
     SAFE_TYPES = {
         'List': list,
@@ -72,7 +78,9 @@ def type_check(orig_f: Callable, new_f: Callable):
         'str': str,
         'float': float,
         'bool': bool,
+        'object': object,
         'Any': __import__('typing').Any,
+        'TaintedStr': TaintedStr,
     }
 
     def is_safe_annotation(node: ast.AST) -> bool:
@@ -87,9 +95,20 @@ def type_check(orig_f: Callable, new_f: Callable):
             return False
         elif isinstance(node, ast.Constant):
             return True
+        elif isinstance(node, ast.BinOp):
+            return is_safe_annotation(node.left) and is_safe_annotation(node.right)
         return False
 
     def safe_parse_type(type_str: str) -> ast.AST:
+        # Evaluate just the last part of the string
+        # if there are dots just refer to the last class shown, not full path
+        # example: taintmonkey.taint.TaintedStr --> TaintedStr
+        if "." in type_str:
+            index = 0
+            for i in range(0, len(type_str)):
+                if type_str[i] == ".":
+                    index = i
+            type_str = type_str[index + 1:]
         expr = ast.parse(type_str, mode='eval')
         if not is_safe_annotation(expr.body):
             raise ValueError("Unsafe type annotation")
@@ -99,14 +118,57 @@ def type_check(orig_f: Callable, new_f: Callable):
         node = safe_parse_type(type_str)
         return eval(compile(ast.Expression(node), "<string>", "eval"), {"__builtins__": {}}, SAFE_TYPES)
 
+    def standardize_and_check_annotations(this_orig_type, this_new_type):
+
+        # Special case with none type, because none doesn't work with issubclass()
+        if this_new_type is None and this_orig_type is None:
+            return
+
+        if not issubclass(this_new_type, this_orig_type):
+            raise PatchException(
+                f"Argument types do not match. {new_f.__name__}(... {n} ...): {this_new_type} \u2288 {orig_f.__name__}(... {o} ...): {this_orig_type}"
+            )
+
+    #Checks to see if the types are right
+    def check(this_orig, this_new):
+
+        #Reconstruct if needed
+        try:
+            this_orig = reconstruct_type(this_orig)
+        except TypeError:
+            pass
+        try:
+            this_new = reconstruct_type(this_new)
+        except TypeError:
+            pass
+        if isinstance(this_orig, types.UnionType) or isinstance(this_new, types.UnionType):
+
+            #Iterate through type in Union types
+            orig_union_types = this_orig.__args__
+            new_union_types = this_new.__args__
+
+            #Check length
+            if len(orig_union_types) != len(new_union_types):
+                raise PatchException(
+                    f"Number of union arguments do not match."
+                )
+
+            #Loop through
+            for i in range(0, len(orig_union_types)):
+                orig_union_type = orig_union_types[i]
+                new_union_type = new_union_types[i]
+                #Standardize annotations
+                standardize_and_check_annotations(orig_union_type, new_union_type)
+
+        else:
+            # Standardize annotations
+            standardize_and_check_annotations(this_orig, this_new)
+
     """CONTINUE WITH CODE"""
 
+    #Get signatures
     orig_sig = inspect.getfullargspec(orig_f)
     new_sig = inspect.getfullargspec(new_f)
-
-    #Print sigs (see difference in annotations)
-    print(orig_sig)
-    print(new_sig)
 
     # Remove "self" from argument list. For the purposes of monkey patching,
     # we do not care if it type checks (does not matter).
@@ -121,46 +183,20 @@ def type_check(orig_f: Callable, new_f: Callable):
 
     # Check matching argument type
     for o, n in zip(orig_args, new_args):
-        orig_type = orig_sig.annotations.get(o, object)
-        new_type = new_sig.annotations.get(n, object)
+        orig_arg = orig_sig.annotations.get(o, object)
+        new_arg = new_sig.annotations.get(n, object)
+        check(orig_arg, new_arg)
 
-        #Standardize annotations
-        try:
-            orig_type = reconstruct_type(orig_type)
-        except ValueError:
-            print("BAD VALUE - OLD")
-            raise ValueError()
-        except TypeError:
-            print("BAD TYPE - OLD")
+    # Check matching return type vararg subtype relation
+    orig_vararg = orig_sig.annotations.get(orig_sig.varargs, object)
+    new_vararg = new_sig.annotations.get(new_sig.varargs, object)
+    check(orig_vararg, new_vararg)
 
-        try:
-            new_type = reconstruct_type(new_type)
-        except ValueError:
-            print("BAD VALUE - NEW")
-            raise ValueError()
-        except TypeError:
-            print("BAD TYPE - NEW")
-
-        print("GURT", orig_type, "YO", new_type)
-        if not issubclass(new_type, orig_type):
-            raise PatchException(
-                f"Argument types do not match. {new_f.__name__}(... {n} ...): {new_type} \u2288 {orig_f.__name__}(... {o} ...): {orig_type}"
-            )
 
     # Check matching return type matches subtype relation
-    """
-    THIS IS NOT DOING TOO HOT. PROBLEM IS THAT IT IS UNABLE TO HANDLE UNIONS FROM WHAT I CAN TELL
-    I TRIED MAKING SOME FIXES BUT I THINK IT'S A LITTLE OVER MY HEAD AND I DON'T WANT TO DO SOMETHING DUMB THAT MIGHT
-    EXPOSE A VULNERABILITY/DOESN'T WORK FOR ALL CASES
-    """
     orig_ret = orig_sig.annotations.get("return", object)
     new_ret = new_sig.annotations.get("return", object)
-    print("gurt", orig_ret, "yo", new_ret)
-    print("gurt", type(orig_ret), "yo", type(orig_ret))
-    if not issubclass(new_ret, orig_ret):
-        raise PatchException(
-            f"Return types do not match. {new_f.__name__}: {new_ret} \u2288 {orig_f.__name__}: {orig_ret}"
-        )
+    check(orig_ret, new_ret)
 
 
 def patch_function(func_path: str):

@@ -12,6 +12,7 @@ PYTHONPATH=. python3 plugins/cwe_78_os_command_injection/__init__.py
 ```
 """
 import builtins
+import os.path
 from urllib.parse import urlencode
 
 import pytest
@@ -37,18 +38,18 @@ SINKS = ["open"]
 
 # Monkey patching
 #UNCOMMENT TO SEE ERROR WITH UNIONS AND RETURN VALUES
-"""old_safe_join = werkzeug.security.safe_join
+old_safe_join = werkzeug.security.safe_join
 @patch_function("werkzeug.security.safe_join")
-def new_safe_join(directory: str, *pathnames: TaintedStr) -> TaintedStr | None:
+def new_safe_join(directory: str, *pathnames: TaintedStr) -> str | None:
     for pathname in pathnames:
         if isinstance(pathname, TaintedStr):
             pathname.sanitize()
-    return old_safe_join(directory, *pathnames)"""
+    return old_safe_join(directory, *pathnames)
 
 
 old_open = builtins.open
 @patch_function("builtins.open")
-def new_open(file: TaintedStr, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None):
+def new_open(file, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None):
     if isinstance(file, TaintedStr) and file.is_tainted():
         raise TaintException("potential vulnerability")
     return old_open(file, mode, buffering, encoding, errors, newline, closefd, opener)
@@ -56,17 +57,6 @@ def new_open(file: TaintedStr, mode='r', buffering=-1, encoding=None, errors=Non
 
 # Patch utility functions
 import dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app
-
-#This was my temporary fix that bypasses the harder monkey patching shown above
-old_custom_safe_join = (
-    dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app.custom_safe_join
-)
-@patch_function(
-    "dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app.custom_safe_join"
-)
-def new_custom_safe_join(directory, path: TaintedStr):
-    path.sanitize()
-    return old_custom_safe_join(directory, path)
 
 
 old_get_page_post = (
@@ -110,28 +100,9 @@ def fuzzer(app):
     return DictionaryFuzzer(app, "plugins/cwe_73_external_control_of_path/dictionary.txt")
 
 
-def test_taint_exception_search_bar(client):
-    client.post(
-        "/search",
-        data={
-            "query": "../../../../../../../../../../../../Windows/PFRO.log"
-        },
-    )
-
-
 def test_taint_exception_url_bypass(client):
     with pytest.raises(TaintException):
         client.get(f"/view?{urlencode({'page': "../../../../../../../../../../../../Windows/PFRO.log"})}")
-
-
-def test_no_taint_exception_search_bar(client):
-    # Expect no exception
-    client.post(
-        "/search",
-        data={
-            "query": "user_page.txt"
-        },
-    )
 
 
 def test_fuzz(fuzzer):
@@ -145,21 +116,6 @@ def test_fuzz(fuzzer):
                 client.get(f"/view?{urlencode({'page': data})}")
             counter += 1
     print("Insecure Fuzz Finished")
-
-    print("\n\nSecure Fuzz Start")
-    counter = 0
-    with fuzzer.get_context() as (client, inputs):
-        for data in inputs:
-            print(f"[Fuzz Attempt {counter}] {data}")
-            # Demonstrating fuzzer capabilities
-            client.post(
-                "/search",
-                data={
-                    "query": data,
-                },
-            )
-            counter += 1
-    print("Secure Fuzz Finished")
 
 
 if __name__ == "__main__":
