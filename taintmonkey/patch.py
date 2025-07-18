@@ -117,18 +117,27 @@ def type_check(orig_f: Callable, new_f: Callable):
             SAFE_TYPES,
         )
 
-    def standardize_and_check_annotations(this_orig_type, this_new_type):
+    def standardize_and_check_annotations(this_orig_type, this_new_type, test):
         # Special case with none type, because none doesn't work with issubclass()
         if this_new_type is None and this_orig_type is None:
             return
 
         if not issubclass(this_new_type, this_orig_type):
-            raise PatchException(
-                f"Argument types do not match. {new_f.__name__}(... {n} ...): {this_new_type} \u2288 {orig_f.__name__}(... {o} ...): {this_orig_type}"
-            )
+            if test == "args":
+                raise PatchException(
+                    f"Argument types do not match. {new_f.__name__}(... {n} ...): {this_new_type} \u2288 {orig_f.__name__}(... {o} ...): {this_orig_type}"
+                )
+            elif test == "vararg":
+                raise PatchException(
+                    f"Variable argument types do not match. {new_f.__name__}(... {n} ...): {this_new_type} \u2288 {orig_f.__name__}(... {o} ...): {this_orig_type}"
+                )
+            else:
+                raise PatchException(
+                    f"Return types do not match. {new_f.__name__}: {this_new_type} \u2288 {orig_f.__name__}: {this_orig_type}"
+                )
 
     # Checks to see if the types are right
-    def check(this_orig, this_new):
+    def check(this_orig, this_new, test):
         # Reconstruct if needed
         try:
             this_orig = reconstruct_type(this_orig)
@@ -154,11 +163,11 @@ def type_check(orig_f: Callable, new_f: Callable):
                 orig_union_type = orig_union_types[i]
                 new_union_type = new_union_types[i]
                 # Standardize annotations
-                standardize_and_check_annotations(orig_union_type, new_union_type)
+                standardize_and_check_annotations(orig_union_type, new_union_type, test)
 
         else:
             # Standardize annotations
-            standardize_and_check_annotations(this_orig, this_new)
+            standardize_and_check_annotations(this_orig, this_new, test)
 
     """CONTINUE WITH CODE"""
 
@@ -181,17 +190,17 @@ def type_check(orig_f: Callable, new_f: Callable):
     for o, n in zip(orig_args, new_args):
         orig_arg = orig_sig.annotations.get(o, object)
         new_arg = new_sig.annotations.get(n, object)
-        check(orig_arg, new_arg)
+        check(orig_arg, new_arg, "args")
 
     # Check matching return type vararg subtype relation
     orig_vararg = orig_sig.annotations.get(orig_sig.varargs, object)
     new_vararg = new_sig.annotations.get(new_sig.varargs, object)
-    check(orig_vararg, new_vararg)
+    check(orig_vararg, new_vararg, "vararg")
 
     # Check matching return type matches subtype relation
     orig_ret = orig_sig.annotations.get("return", object)
     new_ret = new_sig.annotations.get("return", object)
-    check(orig_ret, new_ret)
+    check(orig_ret, new_ret, "ret")
 
 
 def patch_function(func_path: str):
