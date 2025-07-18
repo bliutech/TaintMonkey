@@ -40,13 +40,17 @@ def new_popen(cmd: TaintedStr, mode: str = "r", buffering: int = -1) -> os._wrap
         raise TaintException("potential vulnerability")
     return old_popen(cmd, mode, buffering)
 
+
 # Import the vulnerable application
 import dataset.cwe_78_os_command_injection.insecure_novalidation.app as vulnerable_app
 
 # Store original function for restoration
 old_open_file_command = vulnerable_app.open_file_command
 
-@patch_function("dataset.cwe_78_os_command_injection.insecure_novalidation.app.open_file_command")
+
+@patch_function(
+    "dataset.cwe_78_os_command_injection.insecure_novalidation.app.open_file_command"
+)
 def new_open_file_command(file: TaintedStr):
     return TaintedStr(old_open_file_command(file))
 
@@ -58,6 +62,7 @@ def app():
 
     register_taint_client(app)
     return app
+
 
 @pytest.fixture()
 def client(app):
@@ -89,6 +94,7 @@ def test_fuzz(fuzzer):
             with pytest.raises(TaintException):
                 client.get(f"/insecure?{urlencode({'file': data})}")
             counter += 1
+
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__]))
