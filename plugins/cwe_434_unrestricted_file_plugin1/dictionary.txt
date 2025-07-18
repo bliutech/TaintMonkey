@@ -1,0 +1,8 @@
+shell.php.jpg
+backdoor.asp.png
+cmd.jsp.gif
+shell.php\x00.jpg
+shell.php...........................jpg
+shell.php%20.jpg
+malicious.jpg
+shell.jpg
