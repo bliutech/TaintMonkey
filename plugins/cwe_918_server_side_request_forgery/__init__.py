@@ -86,7 +86,7 @@ def client(app):
 
 @pytest.fixture()
 def fuzzer(app):
-    # Corpus from
+    # Corpus from https://hacktricks.boitatech.com.br/pentesting-web/ssrf-server-side-request-forgery
     return DictionaryFuzzer(
         app, "plugins/cwe_918_server_side_request_forgery/dictionary.txt"
     )
