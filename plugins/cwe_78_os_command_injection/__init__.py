@@ -22,9 +22,13 @@ from taintmonkey.patch import patch_function
 
 import os, sys
 
-
+# TODO(bliutech): this might not be necessary. To simplify fuzzing, all data-flow
+# comes from the request object anyways
 SOURCES = []
-SANITIZERS = []
+
+# TODO(bliutech): look into how to disambiguate function names
+SANITIZERS = ["is_safe_path"]
+
 SINKS = ["os.popen"]
 
 # Monkey patching
@@ -39,25 +43,34 @@ def new_popen(cmd: TaintedStr, mode: str = "r", buffering: int = -1) -> os._wrap
     return old_popen(cmd, mode, buffering)
 
 
-import dataset.cwe_78_os_command_injection.testcase1_insecure_novalidation.app
+# Patch utility functions
+import dataset.cwe_78_testcases.testcase12_novalidation.app
 
-# Patch open_file_command function
-old_open_file_command = dataset.cwe_78_os_command_injection.testcase1_insecure_novalidation.app.open_file_command
+old_open_file_command = (
+    dataset.cwe_78_testcases.testcase1_novalidation.app.open_file_command
+)
 
 
 @patch_function(
-    "dataset.cwe_78_os_command_injection.testcase1_insecure_novalidation.app.open_file_command"
+    "dataset.cwe_78_testcases.testcase12_novalidation.app.open_file_command"
 )
 def new_open_file_command(file: TaintedStr):
     return TaintedStr(old_open_file_command(file))
 
 
+old_is_safe_path = dataset.cwe_78_testcases.testcase1_novalidation.app.is_safe_path
+
+
+@patch_function("dataset.cwe_78_testcases.testcase12_novalidation.app.is_safe_path")
+def new_is_safe_path(path: TaintedStr):
+    path.sanitize()
+    return old_is_safe_path(path)
+
+
 # https://flask.palletsprojects.com/en/stable/testing/
 @pytest.fixture()
 def app():
-    from dataset.cwe_78_os_command_injection.testcase1_insecure_novalidation.app import (
-        app,
-    )
+    from dataset.cwe_78_testcases.testcase12_novalidation.app import app
 
     register_taint_client(app)
 
@@ -80,9 +93,9 @@ def test_taint_exception(client):
         client.get("/insecure?file=/etc/passwd")
 
 
-def test_command_injection(client):
-    with pytest.raises(TaintException):
-        client.get("/insecure?file=example.txt;ls")
+def test_no_taint_exception(client):
+    # Expect no exception
+    client.get("/secure?file=/etc/passwd")
 
 
 def test_fuzz(fuzzer):
