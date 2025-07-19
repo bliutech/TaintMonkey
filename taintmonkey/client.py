@@ -47,6 +47,7 @@ class TaintRequest(Request):
         super().__init__(*args, **kwargs)
         self._clobber_args()
         self._clobber_form()
+        self._clobber_json()
 
     def is_tainted(self):  # type: ignore
         """
@@ -66,9 +67,28 @@ class TaintRequest(Request):
             new_args.append((k, TaintedStr(v)))
         self.form = ImmutableMultiDict(new_args)  # type: ignore
 
+    def _clobber_json(self):
+        original_get_json = self.get_json
+        
+        def tainted_get_json(*args, **kwargs):
+            json_data = original_get_json(*args, **kwargs)
+            if json_data is not None and self.is_tainted():
+                return self._taint_json_data(json_data)
+            return json_data
+            
+        self.get_json = tainted_get_json
+    
+    def _taint_json_data(self, data):
+        if isinstance(data, str):
+            return TaintedStr(data)
+        elif isinstance(data, list):
+            return [self._taint_json_data(item) for item in data]
+        elif isinstance(data, dict):
+            return {k: self._taint_json_data(v) for k, v in data.items()}
+        return data
+    
     # TODO(bliutech): add support for other request constructs
     # such as JSON (i.e. request.json())
-
 
 def register_taint_client(app: Flask):
     """
