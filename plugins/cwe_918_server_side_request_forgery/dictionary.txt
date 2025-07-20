@@ -1,0 +1,67 @@
+http://127.0.0.1:80
+http://127.0.0.1:443
+http://127.0.0.1:22
+http://127.1:80
+http://0
+http://0.0.0.0:80
+http://localhost:80
+http://[::]:80/
+http://[::]:25/ SMTP
+http://[::]:3128/ Squid
+http://[0000::1]:80/
+http://[0:0:0:0:0:ffff:127.0.0.1]/thefile
+http://①②⑦.⓪.⓪.⓪
+http://127.127.127.127
+http://127.0.1.3
+http://127.0.0.0
+http://2130706433/ = http://127.0.0.1
+http://017700000001 = http://127.0.0.1
+http://3232235521/ = http://192.168.0.1
+http://3232235777/ = http://192.168.1.1
+127.0.0.1 = 0x7f 00 00 01
+http://0x7f000001/ = http://127.0.0.1
+http://0xc0a80014/ = http://192.168.0.20
+http://{domain}@127.0.0.1
+http://127.0.0.1#{domain}
+http://{domain}.127.0.0.1
+http://127.0.0.1/{domain}
+http://127.0.0.1/?d={domain}
+https://{domain}@127.0.0.1
+https://127.0.0.1#{domain}
+https://{domain}.127.0.0.1
+https://127.0.0.1/{domain}
+https://127.0.0.1/?d={domain}
+http://{domain}@localhost
+http://localhost#{domain}
+http://{domain}.localhost
+http://localhost/{domain}
+http://localhost/?d={domain}
+http://127.0.0.1%00{domain}
+http://127.0.0.1?{domain}
+http://127.0.0.1///{domain}
+https://127.0.0.1%00{domain}
+https://127.0.0.1?{domain}
+https://127.0.0.1///{domain}
+localtest.me = 127.0.0.1
+customer1.app.localhost.my.company.127.0.0.1.nip.io = 127.0.0.1
+mail.ebc.apple.com = 127.0.0.6 (localhost)
+127.0.0.1.nip.io = 127.0.0.1 (Resolves to the given IP)
+www.example.com.customlookup.www.google.com.endcustom.sentinel.pentesting.us = Resolves to www.google.com
+http://customer1.app.localhost.my.company.127.0.0.1.nip.io
+http://bugbounty.dod.network = 127.0.0.2 (localhost)
+1ynrnhl.xip.io == 169.254.169.254
+spoofed.burpcollaborator.net = 127.0.0.1
+localhost:+11211aaa
+localhost:00011211aaaa
+http://0/
+http://127.1
+http://127.0.1
+http://1.1.1.1 &@2.2.2.2# @3.3.3.3/
+urllib2 : 1.1.1.1
+requests + browsers : 2.2.2.2
+urllib : 3.3.3.3
+filter_var() php function: 0://evil.com:80;http://google.com:80/
+http://127.1.1.1:80\@127.2.2.2:80/
+http://127.1.1.1:80\@@127.2.2.2:80/
+http://127.1.1.1:80:\@@127.2.2.2:80/
+http://127.1.1.1:80#\@127.2.2.2:80/
