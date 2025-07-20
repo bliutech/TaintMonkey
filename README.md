@@ -31,6 +31,15 @@ The following runs the CWE 78: OS Command Injection plugin as an example.
 PYTHONPATH=. python3 plugins/cwe_78_os_command_injection/__init__.py
 ```
 
+## Experiments
+In order to run experiments using the *JungleGym* dataset, make sure to set up the environment by doing the following.
+
+```
+python3 -m venv venv
+source venv/bin/activate
+bash experiments/setup.sh
+```
+
 ## Authors
 The following members contributed to this project as part of GSET 2025.
  
