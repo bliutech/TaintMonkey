@@ -13,6 +13,8 @@ PYTHONPATH=. python3 plugins/cwe_78_os_command_injection/__init__.py
 """
 
 import pytest
+import os
+import sys
 
 from taintmonkey import TaintException
 from taintmonkey.client import register_taint_client
@@ -22,13 +24,9 @@ from taintmonkey.patch import patch_function
 
 import os, sys
 
-# TODO(bliutech): this might not be necessary. To simplify fuzzing, all data-flow
-# comes from the request object anyways
+
 SOURCES = []
-
-# TODO(bliutech): look into how to disambiguate function names
-SANITIZERS = ["is_safe_path"]
-
+SANITIZERS = []
 SINKS = ["os.popen"]
 
 # Monkey patching
@@ -73,8 +71,7 @@ def app():
     from dataset.cwe_78_testcases.testcase12_novalidation.app import app
 
     register_taint_client(app)
-
-    yield app
+    return app
 
 
 @pytest.fixture()
@@ -84,7 +81,6 @@ def client(app):
 
 @pytest.fixture()
 def fuzzer(app):
-    # Corpus from https://hacktricks.boitatech.com.br/pentesting-web/command-injection
     return DictionaryFuzzer(app, "plugins/cwe_78_os_command_injection/dictionary.txt")
 
 
@@ -93,9 +89,9 @@ def test_taint_exception(client):
         client.get("/insecure?file=/etc/passwd")
 
 
-def test_no_taint_exception(client):
-    # Expect no exception
-    client.get("/secure?file=/etc/passwd")
+def test_command_injection(client):
+    with pytest.raises(TaintException):
+        client.get("/insecure?file=example.txt;ls")
 
 
 def test_fuzz(fuzzer):
@@ -105,7 +101,6 @@ def test_fuzz(fuzzer):
     with fuzzer.get_context() as (client, inputs):
         for data in inputs:
             print(f"[Fuzz Attempt {counter}] {data}")
-            # Demonstrating fuzzer capabilities
             with pytest.raises(TaintException):
                 client.get(f"/insecure?{urlencode({'file': data})}")
             counter += 1

@@ -4,7 +4,7 @@ import pytest
 
 from taintmonkey import TaintException
 from taintmonkey.client import register_taint_client
-from taintmonkey.fuzzer import DictionaryFuzzer
+from taintmonkey.fuzzer import DictionaryFuzzer, GrammarBasedFuzzer
 from taintmonkey.taint import TaintedStr
 from taintmonkey.patch import patch_function
 
@@ -12,7 +12,7 @@ import sys
 
 SOURCES = []
 SANITIZERS = []
-SINKS = []
+SINKS = ["insecure_update"]
 
 # monkey patching
 
@@ -65,8 +65,10 @@ def client(app):
 
 @pytest.fixture()
 def fuzzer(app):
-    return DictionaryFuzzer(
-        app, "plugins/cwe_352_cross_site_request_forgery/dictionary.txt"
+    return GrammarBasedFuzzer(
+        app=app,
+        key_pool_frequency=0.5,
+        key_pool=["new_password", "csrf_token", "password", "username"],
     )
 
 
@@ -74,8 +76,8 @@ def test_fuzz(app, fuzzer):
     from urllib.parse import urlencode
 
     counter = 0
-    with fuzzer.get_context() as (attacker, inputs):
-        for data in inputs:
+    with fuzzer.get_context() as (attacker, input_generator):
+        for _, data in zip(range(20), input_generator):
             print(f"[Fuzz Attempt {counter}] {data}")
             victim = app.test_client()
             response = victim.post("/register?username=test&password=test")
@@ -90,7 +92,9 @@ def test_fuzz(app, fuzzer):
                 )
                 # some test files use get instead
                 response = attacker.post(
-                    f"/insecure-update?new_password={urlencode({'file': data})}"
+                    response=victim.post(
+                        "/insecure-update", json={"new_password": "my_new_password"}
+                    )
                 )
                 print(response.data.decode())
             counter += 1

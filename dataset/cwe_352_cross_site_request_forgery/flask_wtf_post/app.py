@@ -84,7 +84,11 @@ def login_required(view):
 @login_required
 @csrf.exempt
 def insecure_update():
-    new_password = request.args.get("new_password") or request.form.get("new_password")
+    new_password = (
+        request.args.get("new_password")
+        or request.form.get("new_password")
+        or (request.get_json(silent=True) or {}).get("new_password")
+    )
 
     if not new_password:
         return "New password is required", 400
