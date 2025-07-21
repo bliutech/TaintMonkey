@@ -38,7 +38,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         # makes sense to me conceptually why the above method works (if TaintException is called, the thing that
         # triggered it is always the second-to-last report entry)
         except IndexError:
-            if len(report_entries) > 0: #At least show something?
+            if len(report_entries) > 0:  # At least show something?
                 report_entry = report_entries[0]
             else:
                 return
