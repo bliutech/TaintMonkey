@@ -12,8 +12,6 @@ from werkzeug.datastructures.structures import MultiDict, ImmutableMultiDict
 
 from taintmonkey.taint import TaintedStr
 
-
-# TODO: add TaintClient session handling
 class TaintClient(FlaskClient):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
