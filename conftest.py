@@ -1,3 +1,6 @@
+from certifi.core import exit_cacert_ctx
+
+
 def pytest_terminal_summary(terminalreporter, exitstatus, config):
     # Check to see if the terminal writer exists
     if not hasattr(terminalreporter, "_tw"):
@@ -29,7 +32,16 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
 
         # Get the report entries and related entry
         report_entries = report.longrepr.chain[0][0].reprentries
-        report_entry = report_entries[len(report_entries) - 2]
+        try:
+            report_entry = report_entries[len(report_entries) - 2]
+        # Current temporary fix - this has never been triggered in my testing and this model is fairly reliable + it
+        # makes sense to me conceptually why the above method works (if TaintException is called, the thing that
+        # triggered it is always the second-to-last report entry)
+        except IndexError:
+            if len(report_entries) > 0: #At least show something?
+                report_entry = report_entries[0]
+            else:
+                return
 
         # Write the file location
         # terminalreporter.write_line(f"VULNERABILITY: {report.nodeid}")
