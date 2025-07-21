@@ -1,6 +1,3 @@
-from certifi.core import exit_cacert_ctx
-
-
 def pytest_terminal_summary(terminalreporter, exitstatus, config):
     # Check to see if the terminal writer exists
     if not hasattr(terminalreporter, "_tw"):
