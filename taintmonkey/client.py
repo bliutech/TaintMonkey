@@ -12,6 +12,7 @@ from werkzeug.datastructures.structures import MultiDict, ImmutableMultiDict
 
 from taintmonkey.taint import TaintedStr
 
+
 class TaintClient(FlaskClient):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
