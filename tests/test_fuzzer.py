@@ -4,7 +4,12 @@ import tempfile
 import pytest
 from flask import Flask
 
-from taintmonkey.fuzzer import Fuzzer, DictionaryFuzzer, GrammarBasedFuzzer
+from taintmonkey.fuzzer import (
+    Fuzzer,
+    DictionaryFuzzer,
+    GrammarBasedFuzzer,
+    MutationBasedFuzzer,
+)
 from grammarinator.runtime import *
 
 
@@ -76,9 +81,7 @@ def test_basic_grammar_based_fuzzer_context_yields_client_and_inputs(test_app):
 
         assert len(inputs) == 5
         for input in inputs:
-            assert isinstance(
-                input, UnparserRule
-            )  # not sure if this is the best way to check generated inputs
+            assert isinstance(input, UnparserRule)
 
 
 def test_key_pool_grammar_based_fuzzer_context_yields_client_and_inputs(test_app):
@@ -93,9 +96,7 @@ def test_key_pool_grammar_based_fuzzer_context_yields_client_and_inputs(test_app
 
         assert len(inputs) == 5
         for input in inputs:
-            assert isinstance(
-                input, UnparserRule
-            )  # not sure if this is the best way to check generated inputs
+            assert isinstance(input, UnparserRule)
 
 
 def test_grammar_based_fuzzer_context_randomization(test_app):
@@ -108,3 +109,62 @@ def test_grammar_based_fuzzer_context_randomization(test_app):
             seen_inputs.add(input)
 
     assert len(seen_inputs) > 1  # High chance some permutations differ
+
+
+def test_mutation_based_fuzzer_loads_inputs(test_app, dummy_corpus_file):
+    fuzzer = MutationBasedFuzzer(app=test_app, corpus=dummy_corpus_file)
+    assert sorted(fuzzer.inputs) == ["input1", "input2", "input3"]
+
+
+def test_mutation_based_fuzzer_load_corpus_missing_file(test_app):
+    with pytest.raises(FileNotFoundError):
+        MutationBasedFuzzer(test_app, "/nonexistent/path/corpus.txt")
+
+
+def test_mutation_based_fuzzer_context_randomization(test_app, dummy_corpus_file):
+    fuzzer = MutationBasedFuzzer(app=test_app, corpus=dummy_corpus_file)
+    seen_inputs = set()
+
+    for _ in range(10):
+        with fuzzer.get_context() as (_, input_generator):
+            input = next(input_generator)
+            seen_inputs.add(input)
+
+    assert len(seen_inputs) > 1
+
+
+def test_basic_mutation_based_fuzzer_context_yields_client_and_inputs(
+    test_app, dummy_corpus_file
+):
+    fuzzer = MutationBasedFuzzer(app=test_app, corpus=dummy_corpus_file)
+
+    with fuzzer.get_context() as (client, input_generator):
+        assert callable(client.get)
+
+        inputs = list(itertools.islice(input_generator, 5))
+
+        assert len(inputs) == 5
+        for input in inputs:
+            assert isinstance(input, str)
+
+
+def test_params_mutation_based_fuzzer_context_yields_client_and_inputs(
+    test_app, dummy_corpus_file
+):
+    fuzzer = MutationBasedFuzzer(
+        app=test_app,
+        corpus=dummy_corpus_file,
+        min_len=3,
+        max_len=10,
+        min_mutations=2,
+        max_mutations=5,
+    )
+
+    with fuzzer.get_context() as (client, input_generator):
+        assert callable(client.get)
+
+        inputs = list(itertools.islice(input_generator, 5))
+
+        assert len(inputs) == 5
+        for input in inputs:
+            assert isinstance(input, str)
