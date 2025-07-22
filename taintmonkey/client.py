@@ -56,13 +56,11 @@ class TaintRequest(Request):
         super().__init__(*args, **kwargs)
         self._clobber_args()
         self._clobber_form()
-        # breakpoint()
 
     def is_tainted(self):  # type: ignore
         """
         Checks if the request is tainted.
         """
-        # breakpoint()
         return self.environ.get("TAINTED", False)
 
     def _clobber_args(self):
