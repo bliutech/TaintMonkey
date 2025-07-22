@@ -108,4 +108,4 @@ cython_debug/
 # ANTLR-generated
 **/.antlr/
 
-*dist-info/
+*.dist-info/

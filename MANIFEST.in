@@ -1,0 +1,3 @@
+global-exclude __pycache__/*
+global-exclude *.py[cod]
+global-exclude .pytest_cache/*
