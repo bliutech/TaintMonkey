@@ -8,7 +8,9 @@ from flask.testing import FlaskClient, EnvironBuilder, BaseRequest
 import typing as t
 from typing import override
 
+import werkzeug
 from werkzeug.datastructures.structures import MultiDict, ImmutableMultiDict
+from copy import copy
 
 from taintmonkey.taint import TaintedStr
 
@@ -41,6 +43,11 @@ class TaintClient(FlaskClient):
         environ_overrides["TAINTED"] = True  # type: ignore[assignment]
 
         # Force execution of https://github.com/pallets/werkzeug/blob/main/src/werkzeug/test.py#L1106
+        if isinstance(args[0], werkzeug.test.EnvironBuilder):
+            builder = copy(args[0])
+            builder.environ_base = self._copy_environ(environ_overrides)  # type: ignore[arg-type]
+            args = (builder,)
+
         return super().open(*args, **kwargs)
 
 
@@ -49,11 +56,13 @@ class TaintRequest(Request):
         super().__init__(*args, **kwargs)
         self._clobber_args()
         self._clobber_form()
+        # breakpoint()
 
     def is_tainted(self):  # type: ignore
         """
         Checks if the request is tainted.
         """
+        # breakpoint()
         return self.environ.get("TAINTED", False)
 
     def _clobber_args(self):
