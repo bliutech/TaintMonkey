@@ -213,7 +213,9 @@ def patch_function(func_path: str):
     def patcher(f):
         module = load_module(module_name)
         func = getattr(module, func_name)
-        type_check(func, f)
+        # TODO(bliutech): temporarily disable type checking to allow for patching
+        # of functions that do not have type annotations
+        # type_check(func, f)
         setattr(module, func_name, f)
         return f
 

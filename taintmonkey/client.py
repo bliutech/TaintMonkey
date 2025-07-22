@@ -43,6 +43,7 @@ class TaintClient(FlaskClient):
         environ_overrides["TAINTED"] = True  # type: ignore[assignment]
 
         # Force execution of https://github.com/pallets/werkzeug/blob/main/src/werkzeug/test.py#L1106
+        # to ensure that the request is properly tainted on redirects.
         if isinstance(args[0], werkzeug.test.EnvironBuilder):
             builder = copy(args[0])
             builder.environ_base = self._copy_environ(environ_overrides)  # type: ignore[arg-type]
@@ -85,7 +86,7 @@ class TaintRequest(Request):
                 return self._taint_json_data(json_data)
             return json_data
 
-        self.get_json = tainted_get_json
+        self.get_json = tainted_get_json  # type: ignore[method-assign]
 
     def _taint_json_data(self, data):
         if isinstance(data, str):
@@ -95,9 +96,6 @@ class TaintRequest(Request):
         elif isinstance(data, dict):
             return {k: self._taint_json_data(v) for k, v in data.items()}
         return data
-
-    # TODO(bliutech): add support for other request constructs
-    # such as JSON (i.e. request.json())
 
 
 def register_taint_client(app: Flask):
@@ -117,5 +115,5 @@ def register_taint_client(app: Flask):
     )
 
     # https://github.com/pallets/flask/blob/main/src/flask/wrappers.py#L22
-    app.request_class = TaintRequest
+    app.request_class = TaintRequest  # type: ignore[assignment]
     app.test_client_class = TaintClient
