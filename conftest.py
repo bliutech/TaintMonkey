@@ -1,56 +1,84 @@
+import importlib.util
+import inspect
+
+
+def get_taint_related_reports(terminalreporter):
+    failed_reports = terminalreporter.stats.get("failed", [])
+
+    n_taint = "Failed: DID NOT RAISE <class 'taintmonkey.TaintException'>"
+    y_taint = "TaintException"
+
+    tainted_reports = []
+    for fail_repr in failed_reports:
+        fail_repr_str = str(fail_repr.longrepr)
+        if y_taint in fail_repr_str and n_taint not in fail_repr_str:
+            tainted_reports.append(fail_repr)
+
+    return tainted_reports
+
+
+def get_function_source_code(filename, function_name):
+    spec = importlib.util.spec_from_file_location("module", filename)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    func = getattr(module, function_name)
+
+    return inspect.getsourcelines(func)
+
+
+def write_source_code_with_context(terminalreporter, report_entry, code_context):
+    f_name = report_entry.reprfileloc.message[3:]
+    f_path = report_entry.reprfileloc.path
+    source_code, func_start = get_function_source_code(f_path, f_name)
+
+    # Get error index in source code and context start index
+    err_index = report_entry.reprfileloc.lineno - func_start
+    err_msg_start = err_index - code_context
+    if err_msg_start < 0:
+        err_msg_start = 0
+
+    # Write line of code with label and context
+    terminalreporter.write_line(f"CODE:")
+    for i in range(err_msg_start, err_index + 1):
+        terminalreporter.write(f"{source_code[i]}")
+
+    # Write "^^^" director
+    taint_message = "TAINT REACHED SINK"
+    try:
+        add_space = len(source_code[err_index]) - len(report_entry.lines[-2]) - 1
+        terminalreporter.write(add_space * " " + report_entry.lines[-1])
+        terminalreporter.write_line(f" --> {taint_message}")
+    except IndexError:
+        # For some reason not all repr entries generate the "^^^" symbols
+        terminalreporter.write_line(f"^^^{taint_message}^^^")
+
+
 def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    # Gives how far behind of error lines of code context should be given
+    code_context = 5
+
     # Check to see if the terminal writer exists
     if not hasattr(terminalreporter, "_tw"):
         return
 
-    # Get the taint exception error reports
-    failed_reports = terminalreporter.stats.get("failed", [])
-    not_tainted_string = "Failed: DID NOT RAISE <class 'taintmonkey.TaintException'>"
-    taint_related_string = "TaintException"
-    tainted_reports = []
-    for failed_report in failed_reports:
-        if taint_related_string in str(
-            failed_report.longrepr
-        ) and not_tainted_string not in str(failed_report.longrepr):
-            tainted_reports.append(failed_report)
-    if len(tainted_reports) == 0:
-        return
+    tainted_reports = get_taint_related_reports(terminalreporter)
 
-    # Write separation line
     terminalreporter.write_sep("=", "TAINT EXCEPTION SUMMARY", purple=True)
 
     # Iterate through tainted reports
     for i in range(len(tainted_reports)):
-        # Set report
         report = tainted_reports[i]
 
-        # Write the report name
         terminalreporter.write_line(f"TEST: {report.nodeid}")
 
-        # Get the report entries and related entry
-        report_entries = report.longrepr.chain[0][0].reprentries
-        try:
-            report_entry = report_entries[len(report_entries) - 2]
-        # Current temporary fix - this has never been triggered in my testing and this model is fairly reliable + it
-        # makes sense to me conceptually why the above method works (if TaintException is called, the thing that
-        # triggered it is always the second-to-last report entry)
-        except IndexError:
-            if len(report_entries) > 0:  # At least show something?
-                report_entry = report_entries[0]
-            else:
-                return
+        report_entry = report.longrepr.reprtraceback.reprentries[-2]
 
-        # Write the file location
-        # terminalreporter.write_line(f"VULNERABILITY: {report.nodeid}")
-        report_loc = report_entry.reprfileloc
-        terminalreporter.write_line(f"LOCATION: {report_loc}")
+        terminalreporter.write_line(f"LOCATION: {report_entry.reprfileloc}")
 
-        # Write specific source code
-        terminalreporter.write_line(f"CODE:")
-        report_lines = report_entry.lines
-        for line in report_lines:
-            terminalreporter.write_line(line)
+        # Show code with context
+        write_source_code_with_context(terminalreporter, report_entry, code_context)
 
         # Add empty line if not last
-        if i != len(tainted_reports) - 1:
+        if i < len(tainted_reports) - 1:
             terminalreporter.write_line("\n")
