@@ -392,7 +392,7 @@ class GrammarBasedFuzzer(Fuzzer):
         self.key_pool = key_pool
 
     @contextmanager
-    def get_context(self):  # type: ignore
+    def get_context(self):
         test_client = self.flask_app.test_client()
 
         def input_generator():
@@ -410,7 +410,6 @@ class GrammarBasedFuzzer(Fuzzer):
         yield (test_client, input_generator())
 
 
-# TODO: add greybox/coverage-guided strategies from fuzzing book to mutation based fuzzer
 class MutationBasedFuzzer(Fuzzer):
     def __init__(
         self,
@@ -450,7 +449,6 @@ class MutationBasedFuzzer(Fuzzer):
             self.inputs = [line.strip() for line in f if line.strip()]
 
     # string mutation methods
-    # do these need to be static?
     @staticmethod
     def random_int(max: int) -> int:
         if max == 1 or max == 0:
@@ -501,7 +499,7 @@ class MutationBasedFuzzer(Fuzzer):
             return input
         first_character_position = MutationBasedFuzzer.random_int(len(input))
         second_character_position = MutationBasedFuzzer.random_int(len(input))
-        # The position of the second character must be different from the first
+
         while first_character_position == second_character_position:
             second_character_position = MutationBasedFuzzer.random_int(len(input))
 
