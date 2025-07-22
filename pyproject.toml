@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "taintmonkey"
+version = "1.0.0"
+description = "Dynamic taint analysis of Python web applications using monkey patching."
+readme = "README.md"
+authors = [
+    {name = "Benson Liu", email = "bensonhliu@gmail.com"},
+    {name = "Anusha Iyer"},
+    {name = "Sebastian Mercado", email = "simercado07@gmail.com"},
+    {name = "Aiden Chen", email = "aidenchen.contact@gmail.com"},
+    {name = "Carter Chew", email = "carterkylechew@gmail.com"},
+    {name = "Shayan Chatiwala", email = "shayan.chatiwala@gmail.com"},
+    {name = "Aarav Parikh", email = "aaravp1223@gmail.com"},
+]
+license = {file = "LICENSE"}
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "antlerinator == 1!3.0.0",
+    "antlr4-python3-runtime == 4.13.0",
+    "autopep8 == 2.3.2",
+    "blinker == 1.9.0",
+    "click == 8.2.1",
+    "coverage == 7.9.2",
+    "Flask == 3.1.1",
+    "grammarinator == 23.7",
+    "inators == 2.1.0",
+    "iniconfig == 2.1.0",
+    "itsdangerous == 2.2.0",
+    "Jinja2 == 3.1.6",
+    "MarkupSafe == 3.0.2",
+    "packaging == 25.0",
+    "pluggy == 1.6.0",
+    "pycodestyle == 2.14.0",
+    "Pygments == 2.19.2",
+    "pytest == 8.4.1",
+    "pytest-cov == 6.2.1",
+    "setuptools == 80.9.0",
+    "Werkzeug == 3.1.3",
+]
+requires-python = ">=3.9"
+
+
+[tool.setuptools.packages.find]
+include = ["taintmonkey", "taintmonkey.*"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.urls]
+Homepage = "https://github.com/bliutech/taintmonkey" 
+
+[project.scripts]
+# needed?
