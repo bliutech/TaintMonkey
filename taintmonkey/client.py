@@ -8,7 +8,9 @@ from flask.testing import FlaskClient, EnvironBuilder, BaseRequest
 import typing as t
 from typing import override
 
+import werkzeug
 from werkzeug.datastructures.structures import MultiDict, ImmutableMultiDict
+from copy import copy
 
 from taintmonkey.taint import TaintedStr
 
@@ -30,16 +32,23 @@ class TaintClient(FlaskClient):
         https://github.com/pallets/werkzeug/blob/main/src/werkzeug/test.py#L1098-L1114
         """
 
-        # Build a request object
-        # https://github.com/pallets/flask/blob/main/src/flask/testing.py#L228
-        request = self._request_from_builder_args(args, kwargs)
+        # checks if environ_overrides dict exists in kwargs
+        # if it does, uses the existing one
+        # if not, it creates a new empty dict
+        # then assigns it to environ_overrides
+        environ_overrides = kwargs.setdefault("environ_overrides", {})
 
         # All requests are assumed to be tainted by default.
         # Add the tainted attribute to Werkzeug request environment.
-        request.environ["TAINTED"] = True  # type: ignore[assignment]
+        environ_overrides["TAINTED"] = True  # type: ignore[assignment]
 
         # Force execution of https://github.com/pallets/werkzeug/blob/main/src/werkzeug/test.py#L1106
-        return super().open(request)
+        if isinstance(args[0], werkzeug.test.EnvironBuilder):
+            builder = copy(args[0])
+            builder.environ_base = self._copy_environ(environ_overrides)  # type: ignore[arg-type]
+            args = (builder,)
+
+        return super().open(*args, **kwargs)
 
 
 class TaintRequest(Request):
