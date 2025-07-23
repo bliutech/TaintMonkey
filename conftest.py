@@ -22,7 +22,11 @@ def get_function_source_code(filename, function_name):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
 
-    func = getattr(module, function_name)
+    try:
+        func = getattr(module, function_name)
+    except AttributeError:
+        #Get functions and then recursively search
+        pass
 
     return inspect.getsourcelines(func)
 
@@ -63,6 +67,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         return
 
     tainted_reports = get_taint_related_reports(terminalreporter)
+    if len(tainted_reports) < 1: return
 
     terminalreporter.write_sep("=", "TAINT EXCEPTION SUMMARY", purple=True)
 
