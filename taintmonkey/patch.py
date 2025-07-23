@@ -175,6 +175,15 @@ def type_check(orig_f: Callable, new_f: Callable):
     orig_sig = inspect.getfullargspec(orig_f)
     new_sig = inspect.getfullargspec(new_f)
 
+    # Check matching return type matches subtype relation
+    orig_ret = orig_sig.annotations.get("return", object)
+    new_ret = new_sig.annotations.get("return", object)
+    check(orig_ret, new_ret, "ret")
+
+    # If the new function has both varargs and varkw, it automatically matches
+    if new_sig.varargs and new_sig.varkw:
+        return
+
     # Remove "self" from argument list. For the purposes of monkey patching,
     # we do not care if it type checks (does not matter).
     orig_args = [arg for arg in filter(lambda x: x != "self", orig_sig.args)]
@@ -197,11 +206,6 @@ def type_check(orig_f: Callable, new_f: Callable):
     new_vararg = new_sig.annotations.get(new_sig.varargs, object)
     check(orig_vararg, new_vararg, "vararg")
 
-    # Check matching return type matches subtype relation
-    orig_ret = orig_sig.annotations.get("return", object)
-    new_ret = new_sig.annotations.get("return", object)
-    check(orig_ret, new_ret, "ret")
-
 
 def patch_function(func_path: str):
     """
@@ -213,9 +217,7 @@ def patch_function(func_path: str):
     def patcher(f):
         module = load_module(module_name)
         func = getattr(module, func_name)
-        # TODO(bliutech): temporarily disable type checking to allow for patching
-        # of functions that do not have type annotations
-        # type_check(func, f)
+        type_check(func, f)
         setattr(module, func_name, f)
         return f
 
