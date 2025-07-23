@@ -7,7 +7,7 @@ from flask.testing import FlaskClient
 
 from taintmonkey.client import register_taint_client
 from taintmonkey.fuzzer import Fuzzer
-from taintmonkey.patch import extract_module_and_function, load_module, patch_function
+from taintmonkey.patch import patch_function, original_function
 from taintmonkey.taint import TaintedStr
 
 
@@ -20,7 +20,6 @@ class TaintMonkey:
     Core class for TaintMonkey library.
     """
 
-    _old_implementations = {}
     _fuzzer: Fuzzer | None = None
 
     def __init__(
@@ -80,17 +79,10 @@ class TaintMonkey:
         if sanitizer not in self._sanitizers:
             self._sanitizers.append(sanitizer)
 
-        # TODO(bliutech): migrate this later to use contextvars in taintmonkey.patch
-        # Monkey patch the old sanitizer if it exists
-        module_name, func_name = extract_module_and_function(sanitizer)
-        module = load_module(module_name)
-        func = getattr(module, func_name)
-        self._old_implementations[sanitizer] = func
-
         @patch_function(sanitizer)
         def patched_sanitizer(*args, **kwargs):
             # Call the original sanitizer function
-            ts = TaintedStr(self._old_implementations[sanitizer](*args, **kwargs))
+            ts = TaintedStr(original_function(*args, **kwargs))
             ts.sanitize()
             return ts
 
@@ -101,13 +93,6 @@ class TaintMonkey:
         """
         if verifier not in self._verifiers:
             self._verifiers.append(verifier)
-
-        # TODO(bliutech): migrate this later to use contextvars in taintmonkey.patch
-        # Monkey patch the old sanitizer if it exists
-        module_name, func_name = extract_module_and_function(verifier)
-        module = load_module(module_name)
-        func = getattr(module, func_name)
-        self._old_implementations[verifier] = func
 
         @patch_function(verifier)
         def patched_verifier(*args, **kwargs):
@@ -124,7 +109,7 @@ class TaintMonkey:
                     value.sanitize()
 
             # Call the original verifier function
-            return self._old_implementations[verifier](*args, **kwargs)
+            return original_function(*args, **kwargs)
 
     def register_sink(self, sink: str):
         """
@@ -133,13 +118,6 @@ class TaintMonkey:
         """
         if sink not in self._sinks:
             self._sinks.append(sink)
-
-        # TODO(bliutech): migrate this later to use contextvars in taintmonkey.patch
-        # Monkey patch the old sink if it exists
-        module_name, func_name = extract_module_and_function(sink)
-        module = load_module(module_name)
-        func = getattr(module, func_name)
-        self._old_implementations[sink] = func
 
         @patch_function(sink)
         def patched_sink(*args, **kwargs):
@@ -157,4 +135,4 @@ class TaintMonkey:
                     if value.is_tainted():
                         raise TaintException()
 
-            return self._old_implementations[sink](*args, **kwargs)
+            return original_function(*args, **kwargs)
