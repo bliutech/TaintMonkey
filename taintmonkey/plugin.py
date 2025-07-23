@@ -1,3 +1,8 @@
+"""
+TaintMonkey plugin for pytest.
+"""
+
+
 def get_taint_related_reports(terminalreporter):
     failed_reports = terminalreporter.stats.get("failed", [])
 

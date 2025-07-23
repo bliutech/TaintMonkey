@@ -9,7 +9,7 @@ description = "Dynamic taint analysis of Python web applications using monkey pa
 readme = "README.md"
 authors = [
     {name = "Benson Liu", email = "bensonhliu@gmail.com"},
-    {name = "Anusha Iyer"},
+    {name = "Anusha Iyer", email = "aiyer720@gmail.com"},
     {name = "Sebastian Mercado", email = "simercado07@gmail.com"},
     {name = "Aiden Chen", email = "aidenchen.contact@gmail.com"},
     {name = "Carter Chew", email = "carterkylechew@gmail.com"},
@@ -21,6 +21,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
+    "Framework :: Pytest",
 ]
 dynamic = ["dependencies"]
 requires-python = ">=3.9"
@@ -36,3 +37,6 @@ dev = ["pytest"]
 
 [project.urls]
 Homepage = "https://github.com/bliutech/taintmonkey" 
+
+[project.entry-points.pytest11]
+taintmonkey = "taintmonkey.plugin"
