@@ -87,7 +87,8 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         return
 
     tainted_reports = get_taint_related_reports(terminalreporter)
-    if len(tainted_reports) < 1: return
+    if len(tainted_reports) < 1:
+        return
 
     terminalreporter.write_sep("=", "TAINT EXCEPTION SUMMARY", purple=True)
 
