@@ -13,11 +13,8 @@ PYTHONPATH=. python3 plugins/cwe_78_os_command_injection/__init__.py
 """
 
 import pytest
-import os
-import sys
 
 from taintmonkey import TaintException, TaintMonkey
-from taintmonkey.client import register_taint_client
 from taintmonkey.fuzzer import DictionaryFuzzer
 from taintmonkey.taint import TaintedStr
 from taintmonkey.patch import patch_function, original_function
@@ -44,7 +41,7 @@ def taintmonkey():
 
     tm = TaintMonkey(app, verifiers=VERIFIERS, sanitizers=SANITIZERS, sinks=SINKS)
 
-    fuzzer = DictionaryFuzzer(app, "plugins/cwe_78_os_command_injection/dictionary.txt")
+    fuzzer = DictionaryFuzzer(app, "plugins/cwe_78_os_command_injection/corpus.txt")
     tm.set_fuzzer(fuzzer)
 
     return tm
