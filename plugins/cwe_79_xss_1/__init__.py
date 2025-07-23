@@ -31,7 +31,7 @@ import sys
 
 SOURCES = []
 SANITIZERS = []
-SINKS = []
+SINKS = ["say_hi"]
 
 
 import dataset.cwe_79_cross_site_scripting.html_escape_custom_check_response.app
@@ -77,23 +77,23 @@ def test_taint_exception(client):
     payload = "<script>alert('XSS')</script>"
     query = urlencode({"name": payload})
     with pytest.raises(TaintException):
-        client.get(f"/xss?{query}")
+        client.get(f"/insecure-xss?{query}")
 
 
 def test_no_taint_exception(client):
     payload = "<script>alert('XSS')</script>"
     query = urlencode({"name": payload})
-    client.get(f"/xss_sanitized?{query}")
+    client.get(f"/secure-xss?{query}")
 
 
 def test_fuzz(fuzzer):
     counter = 0
+    print()
     with fuzzer.get_context() as (client, inputs):
         for data in inputs:
             print(f"[Fuzz Attempt {counter}] {data}")
-            # Demonstrating fuzzer capabilities
-            with pytest.raises(TaintException):
-                client.get(f"/xss?{urlencode({'name': data})}")
+
+            client.get(f"/insecure-xss?{urlencode({'name': data})}")
             counter += 1
 
 

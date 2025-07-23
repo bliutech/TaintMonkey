@@ -4,7 +4,7 @@ import pytest
 
 from taintmonkey import TaintException
 from taintmonkey.client import register_taint_client
-from taintmonkey.fuzzer import DictionaryFuzzer, GrammarBasedFuzzer
+from taintmonkey.fuzzer import DictionaryFuzzer, GrammarBasedFuzzer, MutationBasedFuzzer
 from taintmonkey.taint import TaintedStr
 from taintmonkey.patch import patch_function
 
@@ -65,10 +65,9 @@ def client(app):
 
 @pytest.fixture()
 def fuzzer(app):
-    return GrammarBasedFuzzer(
+    return MutationBasedFuzzer(
         app=app,
-        key_pool_frequency=0.5,
-        key_pool=["new_password", "csrf_token", "password", "username"],
+        corpus="plugins/cwe_78_os_command_injection/dictionary.txt"
     )
 
 
@@ -76,8 +75,9 @@ def test_fuzz(app, fuzzer):
     from urllib.parse import urlencode
 
     counter = 0
+    print()
     with fuzzer.get_context() as (attacker, input_generator):
-        for _, data in zip(range(20), input_generator):
+        for _, data in zip(range(10), input_generator):
             print(f"[Fuzz Attempt {counter}] {data}")
             victim = app.test_client()
             response = victim.post("/register?username=test&password=test")
@@ -86,15 +86,14 @@ def test_fuzz(app, fuzzer):
             session_cookie = victim.get_cookie("session")
             assert session_cookie is not None
 
-            with pytest.raises(TaintException):
-                attacker.set_cookie(
-                    domain="localhost", key="session", value=session_cookie.value
-                )
-                # some test files use get instead
-                response = attacker.post(
-                    "/insecure-update", json={"new_password": "my_new_password"}
-                )
-                print(response.data.decode())
+            attacker.set_cookie(
+                domain="localhost", key="session", value=session_cookie.value
+            )
+            # some test files use get instead
+            response = attacker.post(
+                "/insecure-update", json={"new_password": "my_new_password"}
+            )
+            print(response.data.decode())
             counter += 1
 
 

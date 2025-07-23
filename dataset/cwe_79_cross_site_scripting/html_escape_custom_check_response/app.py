@@ -18,14 +18,14 @@ def say_hi(name):
     return f"<h1>Hi {name}!</h1>"
 
 
-@app.route("/xss")
-def vulnerable_xss():
+@app.route("/insecure-xss")
+def insecure_xss():
     name = request.args.get("name", "user")
     return say_hi(name)
 
 
-@app.route("/xss_sanitized")
-def sanitized_xss():
+@app.route("/secure-xss")
+def secure_xss():
     name = request.args.get("name", "user")
     if suspicious_input(name):
         return "XSS detected", 403
