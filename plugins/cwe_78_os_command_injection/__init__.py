@@ -31,17 +31,6 @@ SANITIZERS = []
 SINKS = ["os.popen"]
 
 # Monkey patching
-
-# old_popen = os.popen
-
-
-# @patch_function("os.popen")
-# def new_popen(cmd: TaintedStr, mode: str = "r", buffering: int = -1) -> os._wrap_close:
-#     if cmd.is_tainted():
-#         raise TaintException("potential vulnerability")
-#     return old_popen(cmd, mode, buffering)
-
-
 # Patch utility functions
 import dataset.cwe_78_os_command_injection.insecure_novalidation.app
 
@@ -55,15 +44,6 @@ old_open_file_command = (
 )
 def new_open_file_command(file: TaintedStr):
     return TaintedStr(old_open_file_command(file))
-
-
-# old_is_safe_path = dataset.cwe_78_os_command_injection.insecure_novalidation.app.is_safe_path
-
-
-# @patch_function("dataset.cwe_78_os_command_injection.insecure_novalidation.app.is_safe_path")
-# def new_is_safe_path(path: TaintedStr):
-#     path.sanitize()
-#     return old_is_safe_path(path)
 
 
 @pytest.fixture()
@@ -94,6 +74,7 @@ def test_fuzz(taintmonkey):
     fuzzer = taintmonkey.get_fuzzer()
 
     counter = 0
+    print()
     with fuzzer.get_context() as (client, inputs):
         for data in inputs:
             print(f"[Fuzz Attempt {counter}] {data}")
