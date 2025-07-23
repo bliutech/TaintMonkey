@@ -6,6 +6,7 @@ from taintmonkey.patch import (
     load_module,
     type_check,
     patch_function,
+    original_function,
 )
 
 
@@ -116,3 +117,20 @@ def test_patch_function():
 
     res = random.randint(0, 10)
     assert res == EXPECTED_VALUE
+
+
+def test_original_function_proxy_sets_and_calls():
+    # Patch random.randint and check original_function
+    EXPECTED_VALUE = 123
+
+    @patch_function("random.randint")
+    def randint(a: int, b: int) -> int:
+        # Call the original function via proxy
+        orig = original_function(a, b)
+        assert isinstance(orig, int)
+        return EXPECTED_VALUE
+
+    # After patch, random.randint returns EXPECTED_VALUE
+    import random
+
+    assert random.randint(1, 10) == EXPECTED_VALUE

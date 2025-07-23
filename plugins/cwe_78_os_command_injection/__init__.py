@@ -20,7 +20,7 @@ from taintmonkey import TaintException, TaintMonkey
 from taintmonkey.client import register_taint_client
 from taintmonkey.fuzzer import DictionaryFuzzer
 from taintmonkey.taint import TaintedStr
-from taintmonkey.patch import patch_function
+from taintmonkey.patch import patch_function, original_function
 
 import os, sys
 from urllib.parse import urlencode
@@ -30,20 +30,12 @@ VERIFIERS = []
 SANITIZERS = []
 SINKS = ["os.popen"]
 
-# Monkey patching
-# Patch utility functions
-import dataset.cwe_78_os_command_injection.insecure_novalidation.app
-
-old_open_file_command = (
-    dataset.cwe_78_os_command_injection.insecure_novalidation.app.open_file_command
-)
-
 
 @patch_function(
     "dataset.cwe_78_os_command_injection.insecure_novalidation.app.open_file_command"
 )
 def new_open_file_command(file: TaintedStr):
-    return TaintedStr(old_open_file_command(file))
+    return TaintedStr(original_function(file))
 
 
 @pytest.fixture()
@@ -67,7 +59,7 @@ def test_taint_exception(taintmonkey):
 def test_command_injection(taintmonkey):
     client = taintmonkey.get_client()
     with pytest.raises(TaintException):
-        client.get("/insecure?file=example.txt;ls")
+        client.get(f"/insecure?file=example.txt;ls")
 
 
 def test_fuzz(taintmonkey):

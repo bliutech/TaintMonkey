@@ -10,11 +10,14 @@ interface outside of unit tests and allows for more arbitrary patching.
 """
 
 from collections.abc import Callable
-from importlib import import_module
-import inspect
 from types import ModuleType
 
-__all__ = ["patch_function", "patch_class"]
+from importlib import import_module
+import inspect
+
+from contextvars import ContextVar
+
+__all__ = ["patch_function", "original_function"]
 
 from taintmonkey.taint import TaintedStr
 
@@ -207,6 +210,34 @@ def type_check(orig_f: Callable, new_f: Callable):
     check(orig_vararg, new_vararg, "vararg")
 
 
+class ContextVarProxy:
+    """
+    A proxy class for a ContextVar that allows it to be used like a function.
+
+    Inspired by Werkzeug's Context Locals.
+    # https://werkzeug.palletsprojects.com/en/stable/local/
+    """
+
+    def __init__(self, context_var):
+        self._context_var = context_var
+
+    def __call__(self, *args, **kwargs):
+        return self._context_var.get()(*args, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self._context_var.get(), name)
+
+    def __setattr__(self, name, value):
+        if name == "_context_var":
+            super().__setattr__(name, value)
+        else:
+            setattr(self._context_var.get(), name, value)
+
+
+_patch_ctx = ContextVar("patch_ctx")
+original_function = ContextVarProxy(_patch_ctx)
+
+
 def patch_function(func_path: str):
     """
     Decorator to monkey patch a function.
@@ -219,6 +250,8 @@ def patch_function(func_path: str):
         func = getattr(module, func_name)
         type_check(func, f)
         setattr(module, func_name, f)
+        # Store the original function in context variable
+        _patch_ctx.set(func)
         return f
 
     return patcher
