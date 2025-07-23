@@ -1,7 +1,3 @@
-import importlib.util
-import inspect
-
-
 def get_taint_related_reports(terminalreporter):
     failed_reports = terminalreporter.stats.get("failed", [])
 
@@ -17,36 +13,64 @@ def get_taint_related_reports(terminalreporter):
     return tainted_reports
 
 
-def get_function_source_code(filename, function_name):
-    spec = importlib.util.spec_from_file_location("module", filename)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+def is_function_start(line, error_line):
+    phrases = line.split()
 
-    func = getattr(module, function_name)
+    try:
+        error_line_start = error_line.find(error_line.split()[0])
+        line_start = line.find(phrases[0])
+        if line_start >= error_line_start:
+            return False
+    except IndexError:
+        return False
 
-    return inspect.getsourcelines(func)
+    try:
+        if phrases[0] == "def":
+            return True
+        elif phrases[0] == "async" and phrases[1] == "def":
+            return True
+    except IndexError:
+        return False
+
+    return False
+
+
+def get_function_source_code(file_path, lineno):
+    with open(file_path, "r") as f:
+        lines = f.readlines()
+
+    lineno -= 1
+
+    source_code = [lines[lineno]]
+    while lineno >= 1 and not is_function_start(lines[lineno], source_code[-1]):
+        lineno -= 1
+        source_code.insert(0, lines[lineno])
+
+    return source_code, lineno + 1
 
 
 def write_source_code_with_context(terminalreporter, report_entry, code_context):
-    f_name = report_entry.reprfileloc.message[3:]
     f_path = report_entry.reprfileloc.path
-    source_code, func_start = get_function_source_code(f_path, f_name)
+    lineno = report_entry.reprfileloc.lineno
+    source_code, func_start = get_function_source_code(f_path, lineno)
 
     # Get error index in source code and context start index
-    err_index = report_entry.reprfileloc.lineno - func_start
+    err_index = lineno - func_start
     err_msg_start = err_index - code_context
     if err_msg_start < 0:
         err_msg_start = 0
 
     # Write line of code with label and context
     terminalreporter.write_line(f"CODE:")
+    adjust = len(str(lineno))
     for i in range(err_msg_start, err_index + 1):
-        terminalreporter.write(f"{source_code[i]}")
+        format_line_num = str(func_start + i).rjust(adjust)
+        terminalreporter.write(f"{format_line_num} {source_code[i]}")
 
     # Write "^^^" director
     taint_message = "TAINT REACHED SINK"
     try:
-        add_space = len(source_code[err_index]) - len(report_entry.lines[-2]) - 1
+        add_space = len(source_code[err_index]) - len(report_entry.lines[-2]) + 2
         terminalreporter.write(add_space * " " + report_entry.lines[-1])
         terminalreporter.write_line(f" --> {taint_message}")
     except IndexError:
@@ -63,6 +87,8 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         return
 
     tainted_reports = get_taint_related_reports(terminalreporter)
+    if len(tainted_reports) < 1:
+        return
 
     terminalreporter.write_sep("=", "TAINT EXCEPTION SUMMARY", purple=True)
 
