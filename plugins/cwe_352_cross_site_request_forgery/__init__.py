@@ -66,8 +66,7 @@ def client(app):
 @pytest.fixture()
 def fuzzer(app):
     return MutationBasedFuzzer(
-        app=app,
-        corpus="plugins/cwe_78_os_command_injection/dictionary.txt"
+        app=app, corpus="plugins/cwe_78_os_command_injection/dictionary.txt"
     )
 
 
