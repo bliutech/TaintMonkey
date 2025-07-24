@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from io import StringIO
 import random
+from random import randint
 import os
 import sys
 
@@ -391,7 +392,7 @@ class GrammarBasedFuzzer(Fuzzer):
         self.key_pool = key_pool
 
     @contextmanager
-    def get_context(self):  # type: ignore
+    def get_context(self):
         test_client = self.flask_app.test_client()
 
         def input_generator():
@@ -409,14 +410,184 @@ class GrammarBasedFuzzer(Fuzzer):
         yield (test_client, input_generator())
 
 
+class MutationBasedFuzzer(Fuzzer):
+    def __init__(
+        self,
+        app: Flask,
+        corpus: str = None,
+        min_len: int = 1,
+        max_len: int = 1000,
+        min_mutations: int = 0,
+        max_mutations: int = 10,
+    ):
+        self.flask_app = app
+        self.corpus = corpus
+        self.inputs = []
+        self.load_corpus()
+
+        self.min_len = min_len
+        self.max_len = max_len
+        self.min_mutations = min_mutations
+        self.max_mutations = max_mutations
+
+        # list of string mutators supported, along with corresponding side effects
+        self.STRING_MUTATORS = {
+            MutationBasedFuzzer.mutate_string_bit_flip: "none",
+            MutationBasedFuzzer.mutate_string_add_sub_byte: "none",
+            MutationBasedFuzzer.mutate_string_insert_character: "increase",
+            MutationBasedFuzzer.mutate_string_delete_character: "decrease",
+            MutationBasedFuzzer.mutate_string_swap_two_chars: "none",
+            MutationBasedFuzzer.mutate_string_duplicate_substring: "increase",
+            MutationBasedFuzzer.mutate_string_repeat_substring: "increase",
+            MutationBasedFuzzer.mutate_string_delete_substring: "decrease",
+        }
+
+    def load_corpus(self):
+        if not os.path.exists(self.corpus):
+            raise FileNotFoundError(f"Corpus file not found: {self.corpus}")
+        with open(self.corpus, "r") as f:
+            self.inputs = [line.strip() for line in f if line.strip()]
+
+    # string mutation methods
+    @staticmethod
+    def random_int(max: int) -> int:
+        if max == 1 or max == 0:
+            return 0
+        return random.randint(0, max - 1)
+
+    @staticmethod
+    def mutate_string_bit_flip(input: str) -> str:
+        if len(input) == 0:
+            return input
+        position = MutationBasedFuzzer.random_int(len(input))
+        replacement_character = chr(
+            ord(input[position]) ^ (1 << MutationBasedFuzzer.random_int(8))
+        )
+        mutation = input[0:position] + replacement_character + input[position + 1 :]
+        return mutation
+
+    @staticmethod
+    def mutate_string_add_sub_byte(input: str) -> str:
+        if len(input) == 0:
+            return input
+        position = MutationBasedFuzzer.random_int(len(input))
+        delta = MutationBasedFuzzer.random_int(256)
+        replacement_character = chr((ord(input[position]) + delta) % 256)
+        mutation = input[0:position] + replacement_character + input[position + 1 :]
+        return mutation
+
+    @staticmethod
+    def mutate_string_insert_character(input: str) -> str:
+        if len(input) == 0:
+            mutation = chr(MutationBasedFuzzer.random_int(256))
+        position = MutationBasedFuzzer.random_int(len(input))
+        character = chr(MutationBasedFuzzer.random_int(256))
+        mutation = input[0:position] + character + input[position:]
+        return mutation
+
+    @staticmethod
+    def mutate_string_delete_character(input: str) -> str:
+        if len(input) == 0:
+            return input
+        position = MutationBasedFuzzer.random_int(len(input))
+        mutation = input[: position - 1] + input[position]
+        return mutation
+
+    @staticmethod
+    def mutate_string_swap_two_chars(input: str) -> str:
+        if len(input) < 2:
+            return input
+        first_character_position = MutationBasedFuzzer.random_int(len(input))
+        second_character_position = MutationBasedFuzzer.random_int(len(input))
+
+        while first_character_position == second_character_position:
+            second_character_position = MutationBasedFuzzer.random_int(len(input))
+
+        mutation = list(input)
+        (
+            mutation[first_character_position],
+            mutation[second_character_position],
+        ) = (
+            mutation[second_character_position],
+            mutation[first_character_position],
+        )
+        mutation_str = "".join(mutation)
+        return mutation_str
+
+    @staticmethod
+    def mutate_string_duplicate_substring(input: str) -> str:
+        if len(input) < 2:
+            return input
+        first_character_position = MutationBasedFuzzer.random_int(len(input))
+        second_character_position = random.randint(first_character_position, len(input))
+        substring = input[first_character_position:second_character_position]
+
+        substring_position = MutationBasedFuzzer.random_int(len(input))
+        mutation = input[:substring_position] + substring + input[substring_position:]
+        return mutation
+
+    @staticmethod
+    def mutate_string_repeat_substring(input: str) -> str:
+        if len(input) < 2:
+            return input
+        first_character_position = MutationBasedFuzzer.random_int(len(input))
+        second_character_position = random.randint(first_character_position, len(input))
+        substring = input[first_character_position:second_character_position]
+        mutation = (
+            input[:second_character_position]
+            + substring
+            + input[second_character_position:]
+        )
+        return mutation
+
+    @staticmethod
+    def mutate_string_delete_substring(input: str) -> str:
+        if len(input) < 2:
+            return input
+        first_character_position = MutationBasedFuzzer.random_int(len(input))
+        second_character_position = random.randint(first_character_position, len(input))
+
+        mutation = input[:first_character_position] + input[second_character_position:]
+        return mutation
+
+    def apply_mutations(self, input: str) -> str:
+        """
+        Applies random mutations to the input string
+        Constrainted by min/max mutations and min/max length
+        """
+        num_mutations = random.randint(self.min_mutations, self.max_mutations)
+        for _ in range(num_mutations):
+            mutator, side_effect = random.choice(list(self.STRING_MUTATORS.items()))
+            if (len(input) == self.max_len and side_effect == "increase") or (
+                len(input) == self.min_len and side_effect == "decrease"
+            ):
+                break
+            input = mutator(input)
+
+        return input
+
+    @contextmanager
+    def get_context(self):  # type: ignore
+        test_client = self.flask_app.test_client()
+
+        def input_generator():
+            while True:
+                try:
+                    input = random.choice(self.inputs)
+                    yield self.apply_mutations(input)
+                except Exception as e:
+                    print(f"Exception: {e}")
+                    continue
+
+        yield (test_client, input_generator())
+
+
 if __name__ == "__main__":
     app = Flask(__name__)
-    g = GrammarBasedFuzzer(
-        app=app,
-        key_pool_frequency=0.5,
-        key_pool=["new_password", "csrf_token", "password", "username"],
+    g = MutationBasedFuzzer(
+        app, corpus="plugins/cwe_78_os_command_injection/dictionary.txt"
     )
 
-    with g.get_context() as (_, input_generator):
-        for _, input in zip(range(20), input_generator):
-            print(type(input))
+    with g.get_context() as (_, input_gen):
+        for _, input_val in zip(range(20), input_gen):
+            print(input_val)

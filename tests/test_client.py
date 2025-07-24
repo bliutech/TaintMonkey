@@ -1,5 +1,5 @@
 import pytest
-from flask import Flask, request
+from flask import Flask, request, redirect, url_for
 
 from taintmonkey.client import register_taint_client
 from taintmonkey.taint import TaintedStr
@@ -27,6 +27,10 @@ def app():
             "type": str(type(val)),
             "tainted": request.is_tainted(),  # type: ignore
         }
+
+    @app.route("/redirect", methods=["GET"])
+    def redirect_handler():
+        return redirect(url_for("query", key="redirect"))
 
     return app
 
@@ -65,4 +69,15 @@ def test_request_is_marked_tainted(app):
     response = client.get("/query?key=test")
     data = response.get_json()
 
+    assert data["tainted"] is True
+
+
+def test_follow_redirects(app):
+    client = app.test_client()
+    response = client.get("/redirect", follow_redirects=True)
+    data = response.get_json()
+    print(data)
+
+    assert data["value"] == "redirect"
+    assert "TaintedStr" in data["type"]
     assert data["tainted"] is True

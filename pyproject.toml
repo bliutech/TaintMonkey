@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "taintmonkey"
+version = "1.0.0"
+description = "Dynamic taint analysis of Python web applications using monkey patching."
+readme = "README.md"
+authors = [
+    {name = "Benson Liu", email = "bensonhliu@gmail.com"},
+    {name = "Anusha Iyer", email = "aiyer720@gmail.com"},
+    {name = "Sebastian Mercado", email = "simercado07@gmail.com"},
+    {name = "Aiden Chen", email = "aidenchen.contact@gmail.com"},
+    {name = "Carter Chew", email = "carterkylechew@gmail.com"},
+    {name = "Shayan Chatiwala", email = "shayan.chatiwala@gmail.com"},
+    {name = "Aarav Parikh", email = "aaravp1223@gmail.com"},
+]
+license = {file = "LICENSE"}
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Framework :: Pytest",
+]
+dynamic = ["dependencies"]
+requires-python = ">=3.9"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools.packages.find]
+include = ["taintmonkey", "taintmonkey.*"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.urls]
+Homepage = "https://github.com/bliutech/taintmonkey" 
+
+[project.entry-points.pytest11]
+taintmonkey = "taintmonkey.plugin"

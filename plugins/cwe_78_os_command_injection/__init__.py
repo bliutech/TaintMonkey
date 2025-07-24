@@ -13,82 +13,57 @@ PYTHONPATH=. python3 plugins/cwe_78_os_command_injection/__init__.py
 """
 
 import pytest
-import os
-import sys
 
-from taintmonkey import TaintException
-from taintmonkey.client import register_taint_client
+from taintmonkey import TaintException, TaintMonkey
 from taintmonkey.fuzzer import DictionaryFuzzer
 from taintmonkey.taint import TaintedStr
-from taintmonkey.patch import patch_function
+from taintmonkey.patch import patch_function, original_function
 
 import os, sys
+from urllib.parse import urlencode
 
 
-SOURCES = []
+VERIFIERS = []
 SANITIZERS = []
 SINKS = ["os.popen"]
-
-# Monkey patching
-
-old_popen = os.popen
-
-
-@patch_function("os.popen")
-def new_popen(cmd: TaintedStr, mode: str = "r", buffering: int = -1) -> os._wrap_close:
-    if cmd.is_tainted():
-        raise TaintException("potential vulnerability")
-    return old_popen(cmd, mode, buffering)
-
-
-# Patch utility functions
-import dataset.cwe_78_os_command_injection.insecure_novalidation.app
-
-old_open_file_command = (
-    dataset.cwe_78_os_command_injection.insecure_novalidation.app.open_file_command
-)
 
 
 @patch_function(
     "dataset.cwe_78_os_command_injection.insecure_novalidation.app.open_file_command"
 )
 def new_open_file_command(file: TaintedStr):
-    return TaintedStr(old_open_file_command(file))
+    return TaintedStr(original_function(file))
 
 
-# https://flask.palletsprojects.com/en/stable/testing/
 @pytest.fixture()
-def app():
+def taintmonkey():
     from dataset.cwe_78_os_command_injection.insecure_novalidation.app import app
 
-    register_taint_client(app)
-    return app
+    tm = TaintMonkey(app, verifiers=VERIFIERS, sanitizers=SANITIZERS, sinks=SINKS)
+
+    fuzzer = DictionaryFuzzer(app, "plugins/cwe_78_os_command_injection/corpus.txt")
+    tm.set_fuzzer(fuzzer)
+
+    return tm
 
 
-@pytest.fixture()
-def client(app):
-    return app.test_client()
-
-
-@pytest.fixture()
-def fuzzer(app):
-    return DictionaryFuzzer(app, "plugins/cwe_78_os_command_injection/dictionary.txt")
-
-
-def test_taint_exception(client):
+def test_taint_exception(taintmonkey):
+    client = taintmonkey.get_client()
     with pytest.raises(TaintException):
         client.get("/insecure?file=/etc/passwd")
 
 
-def test_command_injection(client):
+def test_command_injection(taintmonkey):
+    client = taintmonkey.get_client()
     with pytest.raises(TaintException):
-        client.get("/insecure?file=example.txt;ls")
+        client.get(f"/insecure?file=example.txt;ls")
 
 
-def test_fuzz(fuzzer):
-    from urllib.parse import urlencode
+def test_fuzz(taintmonkey):
+    fuzzer = taintmonkey.get_fuzzer()
 
     counter = 0
+    print()
     with fuzzer.get_context() as (client, inputs):
         for data in inputs:
             print(f"[Fuzz Attempt {counter}] {data}")
