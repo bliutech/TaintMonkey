@@ -1,6 +1,5 @@
 from flask import Flask
 from db import db, init_db
-from sqlalchemy import Column, Integer, String
 import os
 
 # Delete the database file if it exists

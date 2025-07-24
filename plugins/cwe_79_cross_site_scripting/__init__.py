@@ -67,7 +67,7 @@ def client(app):
 
 @pytest.fixture()
 def fuzzer(app):
-    return DictionaryFuzzer(app, "plugins/cwe_79_xss_1/dictionary.txt")
+    return DictionaryFuzzer(app, "plugins/cwe_79_cross_site_scripting/dictionary.txt")
 
 
 from urllib.parse import urlencode
