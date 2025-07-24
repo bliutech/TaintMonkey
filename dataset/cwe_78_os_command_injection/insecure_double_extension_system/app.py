@@ -1,5 +1,4 @@
 import os
-import re
 from flask import Flask, request
 from urllib.parse import unquote
 

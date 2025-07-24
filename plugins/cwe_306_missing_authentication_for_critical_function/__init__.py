@@ -87,7 +87,8 @@ def client(app):
 @pytest.fixture()
 def fuzzer(app):
     return DictionaryFuzzer(
-        app, "plugins/cwe_287_improper_authentication/dictionary.txt"
+        app,
+        "plugins/cwe_306_missing_authentication_for_critical_function/dictionary.txt",
     )
 
 

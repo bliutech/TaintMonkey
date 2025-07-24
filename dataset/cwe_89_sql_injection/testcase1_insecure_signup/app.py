@@ -6,6 +6,12 @@ app = Flask(__name__)
 init_db(app)
 
 
+def create_insecure_user_query(username, password):
+    return text(
+        f"INSERT INTO user (username, password) VALUES ('{username}', '{password}')"
+    )
+
+
 @app.route("/insecure-signup", methods=["POST"])
 def insecure_signup():
     username = request.args.get("username")
@@ -14,9 +20,7 @@ def insecure_signup():
     if not username or not password:
         return "Username and password are required", 400
 
-    query = text(
-        f"INSERT INTO user (username, password) VALUES ('{username}', '{password}')"
-    )
+    query = create_insecure_user_query(username, password)
 
     try:
         db.session.execute(query)
