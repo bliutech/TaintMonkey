@@ -1,14 +1,15 @@
 # TaintMonkey: Dynamic Taint Analysis of Python Web Applications Using Monkey Patching
 
-![TaintMonkey banner](.github/taintmonkey_banner.png)
+![TaintMonkey banner](https://raw.githubusercontent.com/bliutech/TaintMonkey/refs/heads/main/.github/taintmonkey_banner.png)
 
-![CI - Run Unit Tests](https://github.com/bliutech/TaintMonkey/actions/workflows/test.yaml/badge.svg)
-![Wheel](https://img.shields.io/pypi/wheel/taintmonkey.svg)
-![PyPI](https://img.shields.io/pypi/v/taintmonkey.svg)
+| **Component** | **Status** |
+| ----------- | ----------------------------------------------------------------------------------------------------- |
+| **Tests**   | [![CI - Run Unit Tests](https://github.com/bliutech/TaintMonkey/actions/workflows/test.yaml/badge.svg)](https://github.com/bliutech/TaintMonkey/actions) |
+| **Packages** | ![Wheel](https://img.shields.io/pypi/wheel/taintmonkey.svg) [![PyPI](https://img.shields.io/pypi/v/taintmonkey.svg)](https://pypi.org/project/taintmonkey/) |
 
 TaintMonkey is a a dynamic taint analysis library for Python Flask web applications. It leverages monkey patching to instrument Flask applications without modifying source code. TaintMonkey includes a built-in fuzzer that helps developers test endpoints for specific vulnerabilities with randomized inputs. This repository also comes with *JungleGym*, a datatset of 100+ example Flask applications susceptible to web vulnerabilities from the Common Weakness Enumeration (CWE). 
 
-![TaintMonkey components](.github/taintmonkey_components.png)
+![TaintMonkey components](https://raw.githubusercontent.com/bliutech/TaintMonkey/refs/heads/main/.github/taintmonkey_components.png)
 
 ## Installation
 To install the latest version of TaintMonkey, you can run the following command.
@@ -20,7 +21,7 @@ pip install taintmonkey
 ## Usage
 In order to test a Flask endpoint for a particular vulnerability with TaintMonkey, you must first create a plugin.
 
-![TaintMonkey dataflow](.github/taintmonkey_dataflow.png)
+![TaintMonkey dataflow](https://raw.githubusercontent.com/bliutech/TaintMonkey/refs/heads/main/.github/taintmonkey_dataflow.png)
 
 ### Step 1: Monkey Patch the Source
 Monkey patch your endpoint's source to return a tainted string.
