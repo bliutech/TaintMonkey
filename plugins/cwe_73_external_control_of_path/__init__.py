@@ -124,16 +124,10 @@ def test_taint_exception_url_bypass(client):
 
 
 def test_fuzz(fuzzer):
-    print("\n\nInsecure Fuzz Start")
-    counter = 0
-    with fuzzer.get_context() as (client, inputs):
-        for data in inputs:
-            print(f"[Fuzz Attempt {counter}] {data}")
-            # Demonstrating fuzzer capabilities
+    with fuzzer.get_context() as (client, get_input):
+        for data in get_input():
             with pytest.raises(TaintException):
                 client.get(f"/view?{urlencode({'page': data})}")
-            counter += 1
-    print("Insecure Fuzz Finished")
 
 
 if __name__ == "__main__":
