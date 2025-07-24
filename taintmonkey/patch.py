@@ -12,7 +12,8 @@ interface outside of unit tests and allows for more arbitrary patching.
 from collections.abc import Callable
 from types import ModuleType
 
-from importlib import import_module
+from importlib import import_module, reload
+import sys
 import inspect
 
 from contextvars import ContextVar
@@ -44,7 +45,14 @@ def extract_module_and_function(func_path: str) -> tuple[str, str]:
 
 def load_module(module_name: str) -> ModuleType:
     try:
-        module = import_module(module_name)
+        # This is to prevent caching of monkey patched modules
+        # accross different unit tests.
+        if module_name in sys.modules:
+            # Reload the module if it is already loaded
+            module = reload(sys.modules[module_name])
+        else:
+            # Import the module if it is not loaded
+            module = import_module(module_name)
     except Exception as e:
         raise PatchException(e)
 
