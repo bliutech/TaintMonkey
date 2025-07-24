@@ -29,30 +29,30 @@ SOURCES = []
 SANITIZERS = []
 SINKS = []
 
-import dataset.cwe_434_unrestricted_file.testcase1_double_extension.app
+import dataset.cwe_434_unrestricted_upload_file.allowed_extensions_file_save.app
 
 from werkzeug.datastructures import FileStorage
 
 
 old_get_filename = (
-    dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.get_filename
+    dataset.cwe_434_unrestricted_upload_file.allowed_extensions_file_save.app.get_filename
 )
 
 
 @patch_function(
-    "dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.get_filename"
+    "dataset.cwe_434_unrestricted_upload_file.allowed_extensions_file_save.app.get_filename"
 )
 def new_get_filename(file):
     return TaintedStr(old_get_filename(file))
 
 
 old_safe_wrapper = (
-    dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.safe_wrapper
+    dataset.cwe_434_unrestricted_upload_file.allowed_extensions_file_save.app.safe_wrapper
 )
 
 
 @patch_function(
-    "dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.safe_wrapper"
+    "dataset.cwe_434_unrestricted_upload_file.allowed_extensions_file_save.app.safe_wrapper"
 )
 def new_safe_wrapper(file, filename: TaintedStr):
     if filename.is_tainted():
@@ -61,12 +61,12 @@ def new_safe_wrapper(file, filename: TaintedStr):
 
 
 old_is_safe_filename = (
-    dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.is_safe_filename
+    dataset.cwe_434_unrestricted_upload_file.allowed_extensions_file_save.app.is_safe_filename
 )
 
 
 @patch_function(
-    "dataset.cwe_434_unrestricted_file.testcase1_double_extension.app.is_safe_filename"
+    "dataset.cwe_434_unrestricted_upload_file.allowed_extensions_file_save.app.is_safe_filename"
 )
 def new_is_safe_filename(filename: TaintedStr):
     filename.sanitize()
@@ -75,7 +75,7 @@ def new_is_safe_filename(filename: TaintedStr):
 
 @pytest.fixture()
 def app():
-    from dataset.cwe_434_unrestricted_file.testcase1_double_extension.app import app
+    from dataset.cwe_434_unrestricted_upload_file.allowed_extensions_file_save.app import app
 
     register_taint_client(app)
 
@@ -90,7 +90,7 @@ def client(app):
 @pytest.fixture()
 def fuzzer(app):
     return DictionaryFuzzer(
-        app, "plugins/cwe_434_unrestricted_file_plugin1/dictionary.txt"
+        app, "plugins/cwe_434_unrestricted_upload_file/dictionary.txt"
     )
 
 
