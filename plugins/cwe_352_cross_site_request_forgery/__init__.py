@@ -9,6 +9,7 @@ from taintmonkey.taint import TaintedStr
 from taintmonkey.patch import patch_function
 
 import sys
+from urllib.parse import urlencode
 
 SOURCES = []
 SANITIZERS = []
@@ -66,18 +67,13 @@ def client(app):
 @pytest.fixture()
 def fuzzer(app):
     return MutationBasedFuzzer(
-        app=app, corpus="plugins/cwe_78_os_command_injection/dictionary.txt"
+        app=app, corpus="plugins/cwe_352_cross_site_request_forgery/dictionary.txt"
     )
 
 
 def test_fuzz(app, fuzzer):
-    from urllib.parse import urlencode
-
-    counter = 0
-    print()
     with fuzzer.get_context() as (attacker, input_generator):
-        for _, data in zip(range(10), input_generator):
-            print(f"[Fuzz Attempt {counter}] {data}")
+        for _, data in zip(range(10), input_generator()):
             victim = app.test_client()
             response = victim.post("/register?username=test&password=test")
             response = victim.post("/login?username=test&password=test")
@@ -93,7 +89,6 @@ def test_fuzz(app, fuzzer):
                 "/insecure-update", json={"new_password": "my_new_password"}
             )
             print(response.data.decode())
-            counter += 1
 
 
 if __name__ == "__main__":

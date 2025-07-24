@@ -23,6 +23,7 @@ from taintmonkey.taint import TaintedStr
 from taintmonkey.patch import patch_function
 
 import os, sys
+from urllib.parse import urlencode
 
 SOURCES = []
 
@@ -107,16 +108,10 @@ def test_no_taint_exception(client):
 
 
 def test_fuzz(fuzzer):
-    from urllib.parse import urlencode
-
-    counter = 0
-    with fuzzer.get_context() as (client, inputs):
-        for data in inputs:
-            print(f"[Fuzz Attempt {counter}] {data}")
-            # Demonstrating fuzzer capabilities
+    with fuzzer.get_context() as (client, get_input):
+        for data in get_input():
             with pytest.raises(TaintException):
                 client.post(f"/insecure_register?{urlencode({'ssnum': data})}")
-            counter += 1
 
 
 if __name__ == "__main__":

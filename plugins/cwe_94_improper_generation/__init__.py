@@ -1,11 +1,12 @@
 import pytest
-import builtins
 
 from taintmonkey import TaintException
 from taintmonkey.client import register_taint_client
 from taintmonkey.fuzzer import DictionaryFuzzer
 from taintmonkey.taint import TaintedStr
 from taintmonkey.patch import patch_function
+
+from urllib.parse import urlencode
 
 SOURCES = []
 SANITIZERS = []
@@ -64,15 +65,10 @@ def test_no_taint_exception(client):
 
 
 def test_fuzz(fuzzer):
-    from urllib.parse import urlencode
-
-    counter = 0
-    with fuzzer.get_context() as (client, inputs):
-        for data in inputs:
-            print(f"[Fuzz Attempt {counter}] {data}")
+    with fuzzer.get_context() as (client, get_input):
+        for data in get_input():
             with pytest.raises(TaintException):
                 client.get(f"/calculate?{urlencode({'expr': data})}")
-            counter += 1
 
 
 if __name__ == "__main__":

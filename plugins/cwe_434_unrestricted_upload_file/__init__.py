@@ -25,6 +25,8 @@ from taintmonkey.patch import patch_function
 
 import os, sys
 
+import io
+
 SOURCES = []
 SANITIZERS = []
 SINKS = []
@@ -90,22 +92,15 @@ def fuzzer(app):
     )
 
 
+# TODO(bliutech): this does not catch the vulnerability, need to fix the patching
 def test_fuzz(fuzzer):
-    import io
-
-    counter = 0
-    with fuzzer.get_context() as (client, inputs):
-        for data in inputs:
-            print(f"[Fuzz Attempt {counter}] {data}")
-
+    with fuzzer.get_context() as (client, get_input):
+        for data in get_input():
             file_data = {"file": (io.BytesIO(b"image data"), TaintedStr(data))}
-
             res = client.post(
                 "/insecure/upload", data=file_data, content_type="multipart/form-data"
             )
             print(res.text)
-
-            counter += 1
 
 
 if __name__ == "__main__":
