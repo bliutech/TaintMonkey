@@ -92,8 +92,8 @@ def test_fuzz(fuzzer):
     with fuzzer.get_context() as (client, inputs):
         for data in inputs:
             print(f"[Fuzz Attempt {counter}] {data}")
-
-            client.get(f"/insecure-xss?{urlencode({'name': data})}")
+            with pytest.raises(TaintException):
+                client.get(f"/insecure-xss?{urlencode({'name': data})}")
             counter += 1
 
 

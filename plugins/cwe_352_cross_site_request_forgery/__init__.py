@@ -66,7 +66,7 @@ def client(app):
 @pytest.fixture()
 def fuzzer(app):
     return MutationBasedFuzzer(
-        app=app, corpus="plugins/cwe_78_os_command_injection/dictionary.txt"
+        app=app, corpus="plugins/cwe_352_cross_site_request_forgery/dictionary.txt"
     )
 
 
@@ -85,14 +85,15 @@ def test_fuzz(app, fuzzer):
             session_cookie = victim.get_cookie("session")
             assert session_cookie is not None
 
-            attacker.set_cookie(
-                domain="localhost", key="session", value=session_cookie.value
-            )
-            # some test files use get instead
-            response = attacker.post(
-                "/insecure-update", json={"new_password": "my_new_password"}
-            )
-            print(response.data.decode())
+            with pytest.raises(TaintException):
+                attacker.set_cookie(
+                    domain="localhost", key="session", value=session_cookie.value
+                )
+                # some test files use get instead
+                response = attacker.post(
+                    "/insecure-update", json={"new_password": "my_new_password"}
+                )
+                print(response.data.decode())
             counter += 1
 
 
