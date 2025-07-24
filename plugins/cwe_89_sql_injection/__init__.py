@@ -29,7 +29,7 @@ SOURCES = [
 SANITIZERS = []
 SINKS = []
 
-#Monkey patching
+# Monkey patching
 import sqlalchemy
 from typing import Any, Optional
 from sqlalchemy.sql.base import Executable
@@ -41,23 +41,27 @@ from sqlalchemy.engine import Result
 
 
 old_session_execute = sqlalchemy.orm.session.Session.execute
+
+
 @patch_function("sqlalchemy.orm.session.Session.execute")
 def new_session_execute(
-        statement: Executable,
-        params: Optional[_CoreAnyExecuteParams] = None,
-        *,
-        execution_options: OrmExecuteOptionsParameter = util.EMPTY_DICT,
-        bind_arguments: Optional[_BindArguments] = None,
-        _parent_execute_state: Optional[Any] = None,
-        _add_event: Optional[Any] = None,
+    statement: Executable,
+    params: Optional[_CoreAnyExecuteParams] = None,
+    *,
+    execution_options: OrmExecuteOptionsParameter = util.EMPTY_DICT,
+    bind_arguments: Optional[_BindArguments] = None,
+    _parent_execute_state: Optional[Any] = None,
+    _add_event: Optional[Any] = None,
 ) -> Result[Any]:
     print("Gurt")
-    return old_session_execute(statement=statement,
-                               params=params,
-                               execution_options=execution_options,
-                               bind_arguments=bind_arguments,
-                               _parent_execute_state=_parent_execute_state,
-                               _add_event=_add_event)
+    return old_session_execute(
+        statement=statement,
+        params=params,
+        execution_options=execution_options,
+        bind_arguments=bind_arguments,
+        _parent_execute_state=_parent_execute_state,
+        _add_event=_add_event,
+    )
 
 
 # Patch utility functions
