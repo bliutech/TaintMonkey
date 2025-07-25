@@ -61,15 +61,10 @@ def test_command_injection(taintmonkey):
 
 def test_fuzz(taintmonkey):
     fuzzer = taintmonkey.get_fuzzer()
-
-    counter = 0
-    print()
-    with fuzzer.get_context() as (client, inputs):
-        for data in inputs:
-            print(f"[Fuzz Attempt {counter}] {data}")
+    with fuzzer.get_context() as (client, get_input):
+        for data in get_input():
             with pytest.raises(TaintException):
                 client.get(f"/insecure?{urlencode({'file': data})}")
-            counter += 1
 
 
 if __name__ == "__main__":

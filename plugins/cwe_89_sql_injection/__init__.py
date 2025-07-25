@@ -97,7 +97,7 @@ def client(app):
 @pytest.fixture()
 def fuzzer(app):
     # Corpus of SQL injection payloads
-    return DictionaryFuzzer(app, "plugins/cwe_89_sql_injection/dictionary.txt")
+    return DictionaryFuzzer(app, "plugins/cwe_89_sql_injection/corpus.txt")
 
 
 def test_taint_exception(client):
@@ -110,6 +110,7 @@ def test_no_taint_exception(client):
     client.post("/secure-signup?username=admin'--&password=test")
 
 
+# TODO(bliutech): this test case is broken, need to fix it
 def test_fuzz(fuzzer):
     from urllib.parse import urlencode
 

@@ -15,6 +15,9 @@ def test_sanitize():
     s.sanitize()
     assert not s.is_tainted()
 
+    s = TaintedStr("world").sanitize()
+    assert not s.is_tainted()
+
 
 def test_addition():
     s1 = TaintedStr("hello")

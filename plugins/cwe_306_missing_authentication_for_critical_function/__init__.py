@@ -88,7 +88,7 @@ def client(app):
 def fuzzer(app):
     return DictionaryFuzzer(
         app,
-        "plugins/cwe_306_missing_authentication_for_critical_function/dictionary.txt",
+        "plugins/cwe_306_missing_authentication_for_critical_function/corpus.txt",
     )
 
 
@@ -114,6 +114,7 @@ def test_no_taint_exception(client):
     )
 
 
+# TODO(bliutech): need to clean up this test case. Having multiple fuzzers in the same test is not a good practice.
 def test_fuzz(fuzzer):
     print("\n\nInsecure Fuzz Start")
     counter = 0

@@ -5,18 +5,6 @@ Special tainted data types for primitive data types.
 from typing import override
 
 
-# TODO(bliutech): see if we can incorperate this
-class TaintedMixin:
-    def __init__(self):
-        self.tainted = True
-
-    def sanitize(self):
-        self.tainted = False
-
-    def is_tainted(self) -> bool:
-        return self.tainted
-
-
 class TaintedStr(str):
     """
     A tainted string data type.
@@ -39,6 +27,7 @@ class TaintedStr(str):
 
     def sanitize(self):
         self.tainted = False  # type: ignore
+        return self
 
     def is_tainted(self) -> bool:
         return self.tainted

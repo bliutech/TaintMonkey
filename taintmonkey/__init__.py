@@ -82,9 +82,7 @@ class TaintMonkey:
         @patch_function(sanitizer)
         def patched_sanitizer(*args, **kwargs):
             # Call the original sanitizer function
-            ts = TaintedStr(original_function(*args, **kwargs))
-            ts.sanitize()
-            return ts
+            return TaintedStr(original_function(*args, **kwargs)).sanitize()
 
     def register_verifier(self, verifier: str):
         """

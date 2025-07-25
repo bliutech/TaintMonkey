@@ -1,20 +1,14 @@
-# TODO(bliutech): need to implement the following patterns / structure
-# do via dependency injection?
-# - executor
-# - observer
-# - mutator (start with a NoOp mutator where it just uses the corpus as a dictionary)
-
-# For now, we have a primitive structure with a dictionary fuzzer.
-
 from abc import ABC, abstractmethod
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
+from typing import Generator, Callable, Tuple
+
 from io import StringIO
 import random
-from random import randint
 import os
 import sys
 
 from flask import Flask
+from flask.testing import FlaskClient
 
 from taintmonkey.client import register_taint_client
 
@@ -24,26 +18,37 @@ from math import inf
 from grammarinator.runtime import *
 
 
+from contextlib import AbstractContextManager
+
+
 class Fuzzer(ABC):
     @abstractmethod
-    def get_context(self):
+    def get_context(self) -> AbstractContextManager:
         pass
 
 
 class DictionaryFuzzer(Fuzzer):
-    def __init__(self, app: Flask, corpus: str = None):
+    def __init__(self, app: Flask, corpus: str = "corpus.txt"):
         self.flask_app = app
         self.corpus = corpus
         self.inputs = []
         self.load_corpus()
 
     @contextmanager
-    def get_context(self):  # type: ignore
+    def get_context(self):
         # Choose a random input from the dictionary
         random.shuffle(self.inputs)
         test_client = self.flask_app.test_client()
 
-        yield (test_client, self.inputs)
+        def get_input():
+            counter = 0
+            print()
+            for input_str in self.inputs:
+                print(f"[Fuzz Attempt {counter}] {input_str}")
+                yield input_str
+                counter += 1
+
+        yield (test_client, get_input)
 
     def load_corpus(self):
         if not os.path.exists(self.corpus):
@@ -395,7 +400,7 @@ class GrammarBasedFuzzer(Fuzzer):
     def get_context(self):
         test_client = self.flask_app.test_client()
 
-        def input_generator():
+        def get_input():
             while True:
                 try:
                     generator = JSONGenerator(
@@ -407,7 +412,7 @@ class GrammarBasedFuzzer(Fuzzer):
                 except RecursionError:
                     continue
 
-        yield (test_client, input_generator())
+        yield (test_client, get_input)
 
 
 class MutationBasedFuzzer(Fuzzer):
@@ -570,7 +575,7 @@ class MutationBasedFuzzer(Fuzzer):
     def get_context(self):  # type: ignore
         test_client = self.flask_app.test_client()
 
-        def input_generator():
+        def get_input():
             while True:
                 try:
                     input = random.choice(self.inputs)
@@ -579,15 +584,4 @@ class MutationBasedFuzzer(Fuzzer):
                     print(f"Exception: {e}")
                     continue
 
-        yield (test_client, input_generator())
-
-
-if __name__ == "__main__":
-    app = Flask(__name__)
-    g = MutationBasedFuzzer(
-        app, corpus="plugins/cwe_78_os_command_injection/dictionary.txt"
-    )
-
-    with g.get_context() as (_, input_gen):
-        for _, input_val in zip(range(20), input_gen):
-            print(input_val)
+        yield (test_client, get_input)
