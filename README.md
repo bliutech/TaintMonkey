@@ -61,15 +61,9 @@ Example:
 ```python
 def test_fuzz(taintmonkey):
     fuzzer = taintmonkey.get_fuzzer()
-
-    counter = 0
-    print()
-    with fuzzer.get_context() as (client, input_generator):
-        for _, data in zip(range(10), input_generator):
-            print(f"[Fuzz Attempt {counter}] {data}")
-
-            client.get(f"/insecure?{urlencode({'file': data})}")
-            counter += 1
+    with fuzzer.get_context() as (client, get_input):
+        for inp in get_input():
+            client.get(f"/insecure?file={inp}")
 ```
 
 ### Step 4: Run Plugin
