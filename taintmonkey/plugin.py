@@ -6,6 +6,46 @@ import pygments
 from pygments.lexers import PythonLexer
 from pygments.formatters import TerminalFormatter
 
+import traceback
+import pytest
+
+from pytest import TestReport
+
+from taintmonkey import TaintException
+
+report_entry: TestReport | None = None
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    # Let other hooks run first
+    outcome = yield
+    report = outcome.get_result()
+
+    if report.when == "call" and report.failed:
+        excinfo = call.excinfo
+        if excinfo and excinfo.errisinstance(TaintException):
+            global report_entry
+
+            # Hacky solution to suppress the traceback in terminal
+            if len(report.longrepr.reprtraceback.reprentries) > 1:
+                report_entry = report.longrepr.reprtraceback.reprentries[-2]
+
+                report.longrepr.reprtraceback.reprentries = (
+                    report.longrepr.reprtraceback.reprentries[-1:]
+                )
+                report.longrepr.reprtraceback.reprentries[-1].lines = []
+                report.longrepr.reprtraceback.reprentries[-1].reprfuncargs = None
+                report.longrepr.reprtraceback.reprentries[-1].reprlocals = None
+                report.longrepr.reprtraceback.reprentries[
+                    -1
+                ].reprfileloc.path = report_entry.reprfileloc.path
+                report.longrepr.reprtraceback.reprentries[
+                    -1
+                ].reprfileloc.lineno = report_entry.reprfileloc.lineno
+            else:
+                report_entry = report.longrepr.reprtraceback.reprentries[-1]
+
 
 def get_taint_related_reports(terminalreporter):
     failed_reports = terminalreporter.stats.get("failed", [])
@@ -96,11 +136,10 @@ def write_source_code_with_context(terminalreporter, report_entry, code_context)
 def write_single_taint_report(terminalreporter, report, code_context):
     terminalreporter.write_line(f"TEST: {report.nodeid}")
 
-    repr_entries = report.longrepr.reprtraceback.reprentries
-    if len(repr_entries) > 1:
-        report_entry = repr_entries[-2]
-    else:
-        report_entry = repr_entries[-1]
+    global report_entry
+
+    if report_entry is None:
+        return
 
     terminalreporter.write_line(f"LOCATION: {report_entry.reprfileloc}")
 
