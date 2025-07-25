@@ -92,7 +92,7 @@ python -m ruff format --no-cache
 To run the unit test suite, use the following command.
 
 ```
-PYTHONPATH=. pytest
+PYTHONPATH=. pytest tests/
 ```
 
 To generate a coverage report of TaintMonkey, run the following commands.
