@@ -1,9 +1,11 @@
 """
 TaintMonkey plugin for pytest.
 """
+
 import pygments
 from pygments.lexers import PythonLexer
 from pygments.formatters import TerminalFormatter
+
 
 def get_taint_related_reports(terminalreporter):
     failed_reports = terminalreporter.stats.get("failed", [])
@@ -75,9 +77,7 @@ def write_source_code_with_context(terminalreporter, report_entry, code_context)
         format_line_num = str(func_start + i).rjust(adjust)
         # Highlight the code line using pygments
         highlighted = pygments.highlight(
-            source_code[i],
-            PythonLexer(),
-            TerminalFormatter()
+            source_code[i], PythonLexer(), TerminalFormatter()
         )
         terminalreporter.write(f"{format_line_num} {highlighted}")
 
