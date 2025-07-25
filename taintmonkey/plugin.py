@@ -2,6 +2,50 @@
 TaintMonkey plugin for pytest.
 """
 
+import pygments
+from pygments.lexers import PythonLexer
+from pygments.formatters import TerminalFormatter
+
+import traceback
+import pytest
+
+from pytest import TestReport
+
+from taintmonkey import TaintException
+
+report_entry: TestReport | None = None
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    # Let other hooks run first
+    outcome = yield
+    report = outcome.get_result()
+
+    if report.when == "call" and report.failed:
+        excinfo = call.excinfo
+        if excinfo and excinfo.errisinstance(TaintException):
+            global report_entry
+
+            # Hacky solution to suppress the traceback in terminal
+            if len(report.longrepr.reprtraceback.reprentries) > 1:
+                report_entry = report.longrepr.reprtraceback.reprentries[-2]
+
+                report.longrepr.reprtraceback.reprentries = (
+                    report.longrepr.reprtraceback.reprentries[-1:]
+                )
+                report.longrepr.reprtraceback.reprentries[-1].lines = []
+                report.longrepr.reprtraceback.reprentries[-1].reprfuncargs = None
+                report.longrepr.reprtraceback.reprentries[-1].reprlocals = None
+                report.longrepr.reprtraceback.reprentries[
+                    -1
+                ].reprfileloc.path = report_entry.reprfileloc.path
+                report.longrepr.reprtraceback.reprentries[
+                    -1
+                ].reprfileloc.lineno = report_entry.reprfileloc.lineno
+            else:
+                report_entry = report.longrepr.reprtraceback.reprentries[-1]
+
 
 def get_taint_related_reports(terminalreporter):
     failed_reports = terminalreporter.stats.get("failed", [])
@@ -21,21 +65,18 @@ def get_taint_related_reports(terminalreporter):
 def is_function_start(line, error_line):
     phrases = line.split()
 
-    try:
-        error_line_start = error_line.find(error_line.split()[0])
-        line_start = line.find(phrases[0])
-        if line_start >= error_line_start:
-            return False
-    except IndexError:
+    if len(phrases) < 1:
         return False
 
-    try:
-        if phrases[0] == "def":
-            return True
-        elif phrases[0] == "async" and phrases[1] == "def":
-            return True
-    except IndexError:
+    error_line_start = error_line.find(error_line.split()[0])
+    line_start = line.find(phrases[0])
+    if line_start >= error_line_start:
         return False
+
+    if phrases[0] == "def":
+        return True
+    elif len(phrases) > 1 and phrases[0] == "async" and phrases[1] == "def":
+        return True
 
     return False
 
@@ -50,6 +91,10 @@ def get_function_source_code(file_path, lineno):
     while lineno >= 1 and not is_function_start(lines[lineno], source_code[-1]):
         lineno -= 1
         source_code.insert(0, lines[lineno])
+
+    for i in range(len(source_code)):
+        if source_code[i][-1:] != "\n":
+            source_code[i] += "\n"
 
     return source_code, lineno + 1
 
@@ -70,17 +115,36 @@ def write_source_code_with_context(terminalreporter, report_entry, code_context)
     adjust = len(str(lineno))
     for i in range(err_msg_start, err_index + 1):
         format_line_num = str(func_start + i).rjust(adjust)
-        terminalreporter.write(f"{format_line_num} {source_code[i]}")
+        # Highlight the code line using pygments
+        highlighted = pygments.highlight(
+            source_code[i], PythonLexer(), TerminalFormatter()
+        )
+        terminalreporter.write(f"{format_line_num} {highlighted}")
 
     # Write "^^^" director
     taint_message = "TAINT REACHED SINK"
-    try:
+    if len(report_entry.lines) > 1 and all(
+        c == "^" for c in "".join(report_entry.lines[-1].split())
+    ):
         add_space = len(source_code[err_index]) - len(report_entry.lines[-2]) + 2
         terminalreporter.write(add_space * " " + report_entry.lines[-1])
         terminalreporter.write_line(f" --> {taint_message}")
-    except IndexError:
-        # For some reason not all repr entries generate the "^^^" symbols
+    else:
         terminalreporter.write_line(f"^^^{taint_message}^^^")
+
+
+def write_single_taint_report(terminalreporter, report, code_context):
+    terminalreporter.write_line(f"TEST: {report.nodeid}")
+
+    global report_entry
+
+    if report_entry is None:
+        return
+
+    terminalreporter.write_line(f"LOCATION: {report_entry.reprfileloc}")
+
+    # Show code with context
+    write_source_code_with_context(terminalreporter, report_entry, code_context)
 
 
 def pytest_terminal_summary(terminalreporter, exitstatus, config):
@@ -101,14 +165,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     for i in range(len(tainted_reports)):
         report = tainted_reports[i]
 
-        terminalreporter.write_line(f"TEST: {report.nodeid}")
-
-        report_entry = report.longrepr.reprtraceback.reprentries[-2]
-
-        terminalreporter.write_line(f"LOCATION: {report_entry.reprfileloc}")
-
-        # Show code with context
-        write_source_code_with_context(terminalreporter, report_entry, code_context)
+        write_single_taint_report(terminalreporter, report, code_context)
 
         # Add empty line if not last
         if i < len(tainted_reports) - 1:
