@@ -9,7 +9,7 @@
 
 TaintMonkey is a a dynamic taint analysis library for Python Flask web applications. It leverages monkey patching to instrument Flask applications without modifying source code. TaintMonkey includes a built-in fuzzer that helps developers test endpoints for specific vulnerabilities with randomized inputs. This repository also comes with *JungleGym*, a datatset of 100+ example Flask applications susceptible to web vulnerabilities from the Common Weakness Enumeration (CWE). 
 
-![TaintMonkey components](.github/taintmonkey_components.png)
+![TaintMonkey components](https://raw.githubusercontent.com/bliutech/TaintMonkey/refs/heads/main/.github/taintmonkey_components.png)
 
 ## Installation
 To install the latest version of TaintMonkey, you can run the following command.
@@ -21,7 +21,7 @@ pip install taintmonkey
 ## Usage
 In order to test a Flask endpoint for a particular vulnerability with TaintMonkey, you must first create a plugin.
 
-![TaintMonkey dataflow](.github/taintmonkey_dataflow.png)
+![TaintMonkey dataflow](https://raw.githubusercontent.com/bliutech/TaintMonkey/refs/heads/main/.github/taintmonkey_dataflow.png)
 
 ### Step 1: Monkey Patch the Source
 Monkey patch your endpoint's source to return a tainted string.
