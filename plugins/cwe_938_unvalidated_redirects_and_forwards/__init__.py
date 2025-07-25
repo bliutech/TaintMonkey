@@ -88,7 +88,7 @@ def client(app):
 def fuzzer(app):
     # Corpus from https://hacktricks.boitatech.com.br/pentesting-web/open-redirect
     return DictionaryFuzzer(
-        app, "plugins/cwe_938_unvalidated_redirects_and_forwards/dictionary.txt"
+        app, "plugins/cwe_938_unvalidated_redirects_and_forwards/corpus.txt"
     )
 
 

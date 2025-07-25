@@ -5,7 +5,7 @@ CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site
 https://cwe.mitre.org/data/definitions/79.html
 
 
-# Dictionary.txt contains common XSS payloads from the following:
+# corpus.txt contains common XSS payloads from the following:
 https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/XSS%20Injection
 
 

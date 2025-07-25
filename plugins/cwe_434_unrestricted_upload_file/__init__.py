@@ -87,9 +87,7 @@ def client(app):
 
 @pytest.fixture()
 def fuzzer(app):
-    return DictionaryFuzzer(
-        app, "plugins/cwe_434_unrestricted_upload_file/dictionary.txt"
-    )
+    return DictionaryFuzzer(app, "plugins/cwe_434_unrestricted_upload_file/corpus.txt")
 
 
 # TODO(bliutech): this does not catch the vulnerability, need to fix the patching

@@ -92,9 +92,7 @@ def client(app):
 
 @pytest.fixture()
 def fuzzer(app):
-    return DictionaryFuzzer(
-        app, "plugins/cwe_200_sensitive_data_exposure/dictionary.txt"
-    )
+    return DictionaryFuzzer(app, "plugins/cwe_200_sensitive_data_exposure/corpus.txt")
 
 
 def test_taint_exception(client):

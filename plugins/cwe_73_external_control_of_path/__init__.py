@@ -111,9 +111,7 @@ def client(app):
 @pytest.fixture()
 def fuzzer(app):
     # Corpus from https://hacktricks.boitatech.com.br/pentesting-web/command-injection
-    return DictionaryFuzzer(
-        app, "plugins/cwe_73_external_control_of_path/dictionary.txt"
-    )
+    return DictionaryFuzzer(app, "plugins/cwe_73_external_control_of_path/corpus.txt")
 
 
 def test_taint_exception_url_bypass(client):

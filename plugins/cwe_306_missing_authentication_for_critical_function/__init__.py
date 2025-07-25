@@ -88,7 +88,7 @@ def client(app):
 def fuzzer(app):
     return DictionaryFuzzer(
         app,
-        "plugins/cwe_306_missing_authentication_for_critical_function/dictionary.txt",
+        "plugins/cwe_306_missing_authentication_for_critical_function/corpus.txt",
     )
 
 

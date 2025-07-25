@@ -51,7 +51,7 @@ def client(app):
 
 @pytest.fixture()
 def fuzzer(app):
-    return DictionaryFuzzer(app, "plugins/cwe_94_improper_generation/dictionary.txt")
+    return DictionaryFuzzer(app, "plugins/cwe_94_improper_generation/corpus.txt")
 
 
 def test_taint_exception(client):

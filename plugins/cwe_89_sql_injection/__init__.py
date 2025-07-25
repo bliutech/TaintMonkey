@@ -97,7 +97,7 @@ def client(app):
 @pytest.fixture()
 def fuzzer(app):
     # Corpus of SQL injection payloads
-    return DictionaryFuzzer(app, "plugins/cwe_89_sql_injection/dictionary.txt")
+    return DictionaryFuzzer(app, "plugins/cwe_89_sql_injection/corpus.txt")
 
 
 def test_taint_exception(client):
