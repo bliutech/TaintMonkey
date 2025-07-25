@@ -68,24 +68,24 @@ def new_open(
 
 
 # Patch utility functions
-import dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app
+import dataset.cwe_73_external_control_of_path.insecure_url_bypass_flask_safe_join.app
 
 
-old_get_page_post = dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app.get_page_post
+old_get_page_post = dataset.cwe_73_external_control_of_path.insecure_url_bypass_flask_safe_join.app.get_page_post
 
 
 @patch_function(
-    "dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app.get_page_post"
+    "dataset.cwe_73_external_control_of_path.insecure_url_bypass_flask_safe_join.app.get_page_post"
 )
 def new_get_page_post(this_request):
     return TaintedStr(old_get_page_post(this_request))
 
 
-old_get_page = dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app.get_page
+old_get_page = dataset.cwe_73_external_control_of_path.insecure_url_bypass_flask_safe_join.app.get_page
 
 
 @patch_function(
-    "dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app.get_page"
+    "dataset.cwe_73_external_control_of_path.insecure_url_bypass_flask_safe_join.app.get_page"
 )
 def new_get_page(this_request):
     return TaintedStr(old_get_page(this_request))
@@ -94,7 +94,7 @@ def new_get_page(this_request):
 # https://flask.palletsprojects.com/en/stable/testing/
 @pytest.fixture()
 def app():
-    from dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app import (
+    from dataset.cwe_73_external_control_of_path.insecure_url_bypass_flask_safe_join.app import (
         app,
     )
 
