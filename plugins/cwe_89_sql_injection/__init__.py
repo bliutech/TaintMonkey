@@ -23,35 +23,65 @@ from taintmonkey.patch import patch_function
 import sys
 
 # Define sources, sanitizers, and sinks
-SOURCES = []
-SANITIZERS = []
-SINKS = [
-    "dataset.cwe_89_sql_injection_testcase.cwe_89_sql_injection_testcase1.app.create_insecure_user_query"
+SOURCES = [
+    "dataset.cwe_89_sql_injection.testcase1_insecure_signup.app.create_insecure_user_query"
 ]
+SANITIZERS = []
+SINKS = []
+
+# Monkey patching
+import sqlalchemy
+from typing import Any, Optional
+from sqlalchemy.sql.base import Executable
+from sqlalchemy.engine.interfaces import _CoreAnyExecuteParams
+from sqlalchemy.orm._typing import OrmExecuteOptionsParameter
+from sqlalchemy import util
+from sqlalchemy.orm.session import _BindArguments
+from sqlalchemy.engine import Result
+
+
+old_session_execute = sqlalchemy.orm.session.Session.execute
+
+
+@patch_function("sqlalchemy.orm.session.Session.execute")
+def new_session_execute(
+    statement: Executable,
+    params: Optional[_CoreAnyExecuteParams] = None,
+    *,
+    execution_options: OrmExecuteOptionsParameter = util.EMPTY_DICT,
+    bind_arguments: Optional[_BindArguments] = None,
+    _parent_execute_state: Optional[Any] = None,
+    _add_event: Optional[Any] = None,
+) -> Result[Any]:
+    print("Gurt")
+    return old_session_execute(
+        statement=statement,
+        params=params,
+        execution_options=execution_options,
+        bind_arguments=bind_arguments,
+        _parent_execute_state=_parent_execute_state,
+        _add_event=_add_event,
+    )
+
 
 # Patch utility functions
-import dataset.cwe_89_sql_injection_testcase.cwe_89_sql_injection_testcase1.app
+import dataset.cwe_89_sql_injection.testcase1_insecure_signup.app
 
-old_create_insecure_user_query = dataset.cwe_89_sql_injection_testcase.cwe_89_sql_injection_testcase1.app.create_insecure_user_query
+old_create_insecure_user_query = dataset.cwe_89_sql_injection.testcase1_insecure_signup.app.create_insecure_user_query
 
 
 @patch_function(
-    "dataset.cwe_89_sql_injection_testcase.cwe_89_sql_injection_testcase1.app.create_insecure_user_query"
+    "dataset.cwe_89_sql_injection.testcase1_insecure_signup.app.create_insecure_user_query"
 )
 def new_create_insecure_user_query(username: TaintedStr, password: TaintedStr):
-    query_string = (
-        f"INSERT INTO user (username, password) VALUES ('{username}', '{password}')"
-    )
-    if username.is_tainted():
-        raise TaintException("potential SQL injection vulnerability in username")
-    if password.is_tainted():
-        raise TaintException("potential SQL injection vulnerability in password")
+    if username.is_tainted() or password.is_tainted():
+        return TaintedStr(old_create_insecure_user_query(username, password))
     return old_create_insecure_user_query(username, password)
 
 
 @pytest.fixture()
 def app():
-    from dataset.cwe_89_sql_injection_testcase.cwe_89_sql_injection_testcase1.app import (
+    from dataset.cwe_89_sql_injection.testcase1_insecure_signup.app import (
         app,
     )
 
@@ -67,7 +97,7 @@ def client(app):
 @pytest.fixture()
 def fuzzer(app):
     # Corpus of SQL injection payloads
-    return DictionaryFuzzer(app, "plugins/cwe_89_sql_injection/dictionary.txt")
+    return DictionaryFuzzer(app, "plugins/cwe_89_sql_injection/corpus.txt")
 
 
 def test_taint_exception(client):
@@ -80,6 +110,7 @@ def test_no_taint_exception(client):
     client.post("/secure-signup?username=admin'--&password=test")
 
 
+# TODO(bliutech): this test case is broken, need to fix it
 def test_fuzz(fuzzer):
     from urllib.parse import urlencode
 

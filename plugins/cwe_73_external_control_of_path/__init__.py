@@ -68,24 +68,24 @@ def new_open(
 
 
 # Patch utility functions
-import dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app
+import dataset.cwe_73_external_control_of_path.insecure_url_bypass_flask_safe_join.app
 
 
-old_get_page_post = dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app.get_page_post
+old_get_page_post = dataset.cwe_73_external_control_of_path.insecure_url_bypass_flask_safe_join.app.get_page_post
 
 
 @patch_function(
-    "dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app.get_page_post"
+    "dataset.cwe_73_external_control_of_path.insecure_url_bypass_flask_safe_join.app.get_page_post"
 )
 def new_get_page_post(this_request):
     return TaintedStr(old_get_page_post(this_request))
 
 
-old_get_page = dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app.get_page
+old_get_page = dataset.cwe_73_external_control_of_path.insecure_url_bypass_flask_safe_join.app.get_page
 
 
 @patch_function(
-    "dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app.get_page"
+    "dataset.cwe_73_external_control_of_path.insecure_url_bypass_flask_safe_join.app.get_page"
 )
 def new_get_page(this_request):
     return TaintedStr(old_get_page(this_request))
@@ -94,7 +94,7 @@ def new_get_page(this_request):
 # https://flask.palletsprojects.com/en/stable/testing/
 @pytest.fixture()
 def app():
-    from dataset.cwe_73_external_control_of_path.lfi_insecure_url_bypass_flask_safe_join.app import (
+    from dataset.cwe_73_external_control_of_path.insecure_url_bypass_flask_safe_join.app import (
         app,
     )
 
@@ -111,9 +111,7 @@ def client(app):
 @pytest.fixture()
 def fuzzer(app):
     # Corpus from https://hacktricks.boitatech.com.br/pentesting-web/command-injection
-    return DictionaryFuzzer(
-        app, "plugins/cwe_73_external_control_of_path/dictionary.txt"
-    )
+    return DictionaryFuzzer(app, "plugins/cwe_73_external_control_of_path/corpus.txt")
 
 
 def test_taint_exception_url_bypass(client):
@@ -124,16 +122,10 @@ def test_taint_exception_url_bypass(client):
 
 
 def test_fuzz(fuzzer):
-    print("\n\nInsecure Fuzz Start")
-    counter = 0
-    with fuzzer.get_context() as (client, inputs):
-        for data in inputs:
-            print(f"[Fuzz Attempt {counter}] {data}")
-            # Demonstrating fuzzer capabilities
+    with fuzzer.get_context() as (client, get_input):
+        for data in get_input():
             with pytest.raises(TaintException):
                 client.get(f"/view?{urlencode({'page': data})}")
-            counter += 1
-    print("Insecure Fuzz Finished")
 
 
 if __name__ == "__main__":

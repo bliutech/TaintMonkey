@@ -1,7 +1,6 @@
 import os
 from flask import Flask, request
 from urllib.parse import unquote
-import re
 
 app = Flask(__name__)
 

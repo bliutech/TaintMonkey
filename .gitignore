@@ -109,3 +109,5 @@ cython_debug/
 **/.antlr/
 
 *.dist-info/
+
+.DS_Store
