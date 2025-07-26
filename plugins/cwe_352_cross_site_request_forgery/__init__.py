@@ -81,14 +81,15 @@ def test_fuzz(app, fuzzer):
             session_cookie = victim.get_cookie("session")
             assert session_cookie is not None
 
-            attacker.set_cookie(
-                domain="localhost", key="session", value=session_cookie.value
-            )
-            # some test files use get instead
-            response = attacker.post(
-                "/insecure-update", json={"new_password": "my_new_password"}
-            )
-            print(response.data.decode())
+            with pytest.raises(TaintException):
+                attacker.set_cookie(
+                    domain="localhost", key="session", value=session_cookie.value
+                )
+                # some test files use get instead
+                response = attacker.post(
+                    "/insecure-update", json={"new_password": "my_new_password"}
+                )
+                print(response.data.decode())
 
 
 if __name__ == "__main__":
