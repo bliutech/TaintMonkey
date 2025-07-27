@@ -55,6 +55,15 @@ def test_dictionary_fuzzer_context_yields_client_and_inputs(
         assert sorted([inp for inp in get_input()]) == ["input1", "input2", "input3"]
 
 
+def test_fuzzer_modify_app(test_app, dummy_corpus_file):
+    fuzzer = DictionaryFuzzer(test_app, dummy_corpus_file)
+    assert fuzzer.flask_app is test_app
+
+    flask = Flask("__test__")
+    fuzzer.set_app(flask)
+    assert fuzzer.flask_app is flask
+
+
 def test_dictionary_fuzzer_load_corpus_missing_file(test_app):
     with pytest.raises(FileNotFoundError):
         DictionaryFuzzer(test_app, "/nonexistent/path/corpus.txt")

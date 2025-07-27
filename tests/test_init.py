@@ -181,3 +181,24 @@ def test_register_verifier_sanitizes(
 
     tainted.sanitize.assert_called_once()
     assert result == "verified"
+
+
+def test_register_app(monkeypatch, flask_app):
+    patched_functions = {}
+
+    def patch_function_mock(path):
+        def decorator(func):
+            patched_functions[path] = func
+            return func
+
+        return decorator
+
+    monkeypatch.setattr("taintmonkey.patch_function", patch_function_mock)
+
+    tm = TaintMonkey(flask_app)
+    assert tm._app is flask_app
+
+    app = Flask("__test__")
+    tm.set_app(app)
+
+    assert tm._app is app

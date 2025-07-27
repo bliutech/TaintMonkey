@@ -22,9 +22,14 @@ from contextlib import AbstractContextManager
 
 
 class Fuzzer(ABC):
+    flask_app: Flask = Flask(__name__)
+
     @abstractmethod
     def get_context(self) -> AbstractContextManager:
         pass
+
+    def set_app(self, app: Flask):
+        self.flask_app = app
 
 
 class DictionaryFuzzer(Fuzzer):

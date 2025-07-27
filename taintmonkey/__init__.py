@@ -46,6 +46,12 @@ class TaintMonkey:
         for sink in sinks:
             self.register_sink(sink)
 
+    def set_app(self, app: Flask):
+        self._app = app
+        register_taint_client(app)
+        if self._fuzzer:
+            self._fuzzer.set_app(app)
+
     def get_client(self) -> FlaskClient:
         """
         Get the TaintClient instance associated with the Flask app.
