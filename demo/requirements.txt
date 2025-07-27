@@ -18,5 +18,5 @@ Pygments==2.19.2
 pytest==8.4.1
 pytest-cov==6.2.1
 setuptools==80.9.0
-taintmonkey==1.0.1
+taintmonkey==1.0.2
 Werkzeug==3.1.3
