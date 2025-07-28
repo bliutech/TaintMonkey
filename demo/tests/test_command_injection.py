@@ -21,7 +21,7 @@ def taintmonkey(app):
     fuzzer = DictionaryFuzzer(app, "tests/corpus.txt")
     tm.set_fuzzer(fuzzer)
 
-    @patch_function("demo_app.app.get_command")
+    @tm.patch.function("demo_app.app.get_command")
     def new_get_command(name: TaintedStr):
         res = TaintedStr(original_function(name))
         if not name.is_tainted():

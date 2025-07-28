@@ -1,3 +1,4 @@
+from _pytest.monkeypatch import MonkeyPatch
 import pytest
 
 from taintmonkey.patch import (
@@ -7,6 +8,7 @@ from taintmonkey.patch import (
     type_check,
     patch_function,
     original_function,
+    MonkeyPatch as mp,
 )
 
 
@@ -124,6 +126,25 @@ def test_original_function_proxy_sets_and_calls():
     EXPECTED_VALUE = 123
 
     @patch_function("random.randint")
+    def randint(a: int, b: int) -> int:
+        # Call the original function via proxy
+        orig = original_function(a, b)
+        assert isinstance(orig, int)
+        return EXPECTED_VALUE
+
+    # After patch, random.randint returns EXPECTED_VALUE
+    import random
+
+    assert random.randint(1, 10) == EXPECTED_VALUE
+
+
+def test_monkey_patch():
+    patch = mp()
+
+    # Patch random.randint and check original_function
+    EXPECTED_VALUE = 456
+
+    @patch.function("random.randint")
     def randint(a: int, b: int) -> int:
         # Call the original function via proxy
         orig = original_function(a, b)

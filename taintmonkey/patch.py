@@ -18,6 +18,8 @@ import inspect
 
 from contextvars import ContextVar
 
+import pytest
+
 __all__ = ["patch_function", "original_function"]
 
 from taintmonkey.taint import TaintedStr
@@ -271,3 +273,23 @@ def patch_class(class_path: str):
     """
     # TODO(bliutech): add a similar monkey patcher decorator for classes / objects
     pass
+
+
+class MonkeyPatch:
+    def function(self, path: str):
+        """
+        Decorator to monkey patch a function.
+        """
+        module_name, func_name = extract_module_and_function(path)
+
+        # Monkey patcher decorator
+        def patcher(f):
+            module = load_module(module_name)
+            func = getattr(module, func_name)
+            type_check(func, f)
+            setattr(module, func_name, f)
+            # Store the original function in context variable
+            _patch_ctx.set(func)
+            return f
+
+        return patcher

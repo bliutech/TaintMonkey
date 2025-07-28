@@ -7,7 +7,7 @@ from flask.testing import FlaskClient
 
 from taintmonkey.client import register_taint_client
 from taintmonkey.fuzzer import Fuzzer
-from taintmonkey.patch import patch_function, original_function
+from taintmonkey.patch import patch_function, original_function, MonkeyPatch
 from taintmonkey.taint import TaintedStr
 
 
@@ -21,6 +21,7 @@ class TaintMonkey:
     """
 
     _fuzzer: Fuzzer | None = None
+    patch = MonkeyPatch()
 
     def __init__(
         self,
