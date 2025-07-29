@@ -25,14 +25,7 @@ from urllib.parse import urlencode
 
 VERIFIERS = []
 SANITIZERS = []
-SINKS = ["os.popen"]
-
-
-@patch_function(
-    "dataset.cwe_78_os_command_injection.insecure_novalidation.app.open_file_command"
-)
-def new_open_file_command(file: TaintedStr):
-    return TaintedStr(original_function(file))
+SINKS = ["os.system", "os.popen"]
 
 
 @pytest.fixture()
@@ -43,6 +36,54 @@ def taintmonkey():
 
     fuzzer = DictionaryFuzzer(app, "plugins/cwe_78_os_command_injection/corpus.txt")
     tm.set_fuzzer(fuzzer)
+
+    @patch_function(
+        "dataset.cwe_78_os_command_injection.insecure_novalidation.app.open_file_command"
+    )
+    def new_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
+
+    @patch_function(
+        "dataset.cwe_78_os_command_injection.secure_novalidation.app.open_file_command"
+    )
+    def new_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
+
+    @patch_function(
+        "dataset.cwe_78_os_command_injection.insecure_novalidation_system.app.open_file_command"
+    )
+    def new_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
+
+    @patch_function(
+        "dataset.cwe_78_os_command_injection.secure_novalidation_system.app.open_file_command"
+    )
+    def new_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
+
+    @patch_function(
+        "dataset.cwe_78_os_command_injection.insecure_double_extension.app.open_file_command"
+    )
+    def new_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
+
+    @patch_function(
+        "dataset.cwe_78_os_command_injection.secure_double_extension.app.open_file_command"
+    )
+    def new_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
+
+    @patch_function(
+        "dataset.cwe_78_os_command_injection.insecure_double_extension_system.app.open_file_command"
+    )
+    def new_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
+
+    @patch_function(
+        "dataset.cwe_78_os_command_injection.secure_double_extension_system.app.open_file_command"
+    )
+    def new_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
 
     return tm
 
