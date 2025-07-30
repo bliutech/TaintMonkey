@@ -26,7 +26,7 @@ VERIFIERS = [
     "dataset.cwe_78_os_command_injection.secure_novalidation.app.is_safe_path",
     "dataset.cwe_78_os_command_injection.secure_novalidation_system.app.is_safe_path",
     "dataset.cwe_78_os_command_injection.secure_double_extension.app.is_safe_path",
-    "dataset.cwe_78_os_command_injection.secure_double_extension_system.app.is_safe_path"
+    "dataset.cwe_78_os_command_injection.secure_double_extension_system.app.is_safe_path",
 ]
 
 SANITIZERS = []
@@ -36,36 +36,36 @@ SINKS = ["os.system", "os.popen"]
 TEST_CONFIGS = {
     "insecure_novalidation": {
         "app_path": "dataset.cwe_78_os_command_injection.insecure_novalidation.app",
-        "route": "/insecure"
+        "route": "/insecure",
     },
     "secure_novalidation": {
         "app_path": "dataset.cwe_78_os_command_injection.secure_novalidation.app",
-        "route": "/secure"
+        "route": "/secure",
     },
     "insecure_novalidation_system": {
         "app_path": "dataset.cwe_78_os_command_injection.insecure_novalidation_system.app",
-        "route": "/insecure"
+        "route": "/insecure",
     },
     "secure_novalidation_system": {
         "app_path": "dataset.cwe_78_os_command_injection.secure_novalidation_system.app",
-        "route": "/secure"
+        "route": "/secure",
     },
     "insecure_double_extension": {
         "app_path": "dataset.cwe_78_os_command_injection.insecure_double_extension.app",
-        "route": "/insecure"
+        "route": "/insecure",
     },
     "secure_double_extension": {
         "app_path": "dataset.cwe_78_os_command_injection.secure_double_extension.app",
-        "route": "/secure"
+        "route": "/secure",
     },
     "insecure_double_extension_system": {
         "app_path": "dataset.cwe_78_os_command_injection.insecure_double_extension_system.app",
-        "route": "/insecure"
+        "route": "/insecure",
     },
     "secure_double_extension_system": {
         "app_path": "dataset.cwe_78_os_command_injection.secure_double_extension_system.app",
-        "route": "/secure"
-    }
+        "route": "/secure",
+    },
 }
 
 
@@ -152,7 +152,9 @@ def test_fuzz_secure_double_extension(taintmonkey):
             client.get(f"{taintmonkey.route}?{urlencode({'file': data})}")
 
 
-@pytest.mark.parametrize("taintmonkey", ["insecure_double_extension_system"], indirect=True)
+@pytest.mark.parametrize(
+    "taintmonkey", ["insecure_double_extension_system"], indirect=True
+)
 def test_fuzz_insecure_double_extension_system(taintmonkey):
     fuzzer = taintmonkey.get_fuzzer()
     with fuzzer.get_context() as (client, get_input):
@@ -161,7 +163,9 @@ def test_fuzz_insecure_double_extension_system(taintmonkey):
                 client.get(f"{taintmonkey.route}?{urlencode({'file': data})}")
 
 
-@pytest.mark.parametrize("taintmonkey", ["secure_double_extension_system"], indirect=True)
+@pytest.mark.parametrize(
+    "taintmonkey", ["secure_double_extension_system"], indirect=True
+)
 def test_fuzz_secure_double_extension_system(taintmonkey):
     fuzzer = taintmonkey.get_fuzzer()
     with fuzzer.get_context() as (client, get_input):
@@ -171,4 +175,3 @@ def test_fuzz_secure_double_extension_system(taintmonkey):
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__]))
-
