@@ -8,25 +8,6 @@ app = Flask(__name__)
 def error():
     return "Error: Invalid color"
 
-
-@app.route("/style_insecure")
-def style_insecure():
-    color = request.args.get("color", "black")
-    return f"""
-        <html>
-            <head>
-                <style>
-                    h1 {{ color: {color}; }}
-                 </style>
-            </head>
-            <body>
-                <h1>GSET 2025</h1>
-                <p>The color is: {color}</p>
-            </body>
-        </html>
-    """
-
-
 @app.route("/style_secure")
 def style_secure():
     color = request.args.get("color", "black")
