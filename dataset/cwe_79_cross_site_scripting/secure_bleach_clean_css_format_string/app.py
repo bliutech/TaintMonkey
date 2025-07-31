@@ -8,6 +8,7 @@ app = Flask(__name__)
 def error():
     return "Error: Invalid color"
 
+
 @app.route("/style_secure")
 def style_secure():
     color = request.args.get("color", "black")
