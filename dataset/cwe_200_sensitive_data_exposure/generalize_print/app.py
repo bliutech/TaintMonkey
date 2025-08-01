@@ -9,8 +9,6 @@ def input_insecure_birthdate():
     birth = get_info("birthdate")
     if not birth:
         return "No birthday available", 400
-    elif len(birth) > 0 and len(birth) != 10:
-        return "Please enter a valid date in the format MM-DD-YYYY", 400
 
     print_info(birth)
     return "Birthday: " + birth, 200
