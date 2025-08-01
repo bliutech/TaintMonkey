@@ -18,13 +18,17 @@ from taintmonkey import TaintException
 from taintmonkey.client import register_taint_client
 from taintmonkey.fuzzer import DictionaryFuzzer
 from taintmonkey.taint import TaintedStr
-from taintmonkey.patch import patch_function
+from taintmonkey.patch import original_function
 
 import sys
 
 # Define sources, sanitizers, and sinks
-SOURCES = [
-    "dataset.cwe_89_sql_injection.testcase1_insecure_signup.app.create_insecure_user_query"
+VERIFIERS = [
+    "dataset.secure_alphamumeric_signup.app.pattern_match",
+    "dataset.secure_alphanumeric_login.app.pattern_match",
+    "dataset.secure_login.app.sanitize_input",
+    "dataset.secure_second_layer.app.sanitize_query",
+    "dataset.secure_signup.app.sanitize_input",
 ]
 SANITIZERS = []
 SINKS = []
@@ -39,91 +43,174 @@ from sqlalchemy import util
 from sqlalchemy.orm.session import _BindArguments
 from sqlalchemy.engine import Result
 
-
 old_session_execute = sqlalchemy.orm.session.Session.execute
 
 
-@patch_function("sqlalchemy.orm.session.Session.execute")
-def new_session_execute(
-    statement: Executable,
-    params: Optional[_CoreAnyExecuteParams] = None,
-    *,
-    execution_options: OrmExecuteOptionsParameter = util.EMPTY_DICT,
-    bind_arguments: Optional[_BindArguments] = None,
-    _parent_execute_state: Optional[Any] = None,
-    _add_event: Optional[Any] = None,
-) -> Result[Any]:
-    print("Gurt")
-    return old_session_execute(
-        statement=statement,
-        params=params,
-        execution_options=execution_options,
-        bind_arguments=bind_arguments,
-        _parent_execute_state=_parent_execute_state,
-        _add_event=_add_event,
+@pytest.fixture()
+def taintmonkey():
+    from dataset.cwe_89_sql_injection.insecure_alphanumeric_signup.app import app
+
+    tm = TaintMonkey(app, verifiers=VERIFIERS, sanitizers=SANITIZERS, sinks=SINKS)
+
+    fuzzer = DictionaryFuzzer(app, "plugins/cwe_89_sql_injection/corpus.txt")
+    tm.set_fuzzer(fuzzer)
+
+    @tm.patch.function(
+        "dataset.cwe_89_sql_injection.insecure_alphanumeric_login.app.pattern_match"
     )
+    def patched_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
 
-
-# Patch utility functions
-import dataset.cwe_89_sql_injection.testcase1_insecure_signup.app
-
-old_create_insecure_user_query = dataset.cwe_89_sql_injection.testcase1_insecure_signup.app.create_insecure_user_query
-
-
-@patch_function(
-    "dataset.cwe_89_sql_injection.testcase1_insecure_signup.app.create_insecure_user_query"
-)
-def new_create_insecure_user_query(username: TaintedStr, password: TaintedStr):
-    if username.is_tainted() or password.is_tainted():
-        return TaintedStr(old_create_insecure_user_query(username, password))
-    return old_create_insecure_user_query(username, password)
-
-
-@pytest.fixture()
-def app():
-    from dataset.cwe_89_sql_injection.testcase1_insecure_signup.app import (
-        app,
+    @tm.patch.function(
+        "dataset.cwe_89_sql_injection.secure_alphanumeric_login.app.pattern_match"
     )
+    def patched_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
 
-    register_taint_client(app)
-    yield app
+    @tm.patch.function(
+        "dataset.cwe_89_sql_injection.insecure_alphanumeric_signup.app.pattern_match"
+    )
+    def patched_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
+
+    @tm.patch.function(
+        "dataset.cwe_89_sql_injection.secure_alphanumeric_signup.app.pattern_match"
+    )
+    def patched_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
+
+    @tm.patch.function("dataset.cwe_89_sql_injection.insecure_login.app.insecure_input")
+    def patched_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
+
+    @tm.patch.function("dataset.cwe_89_sql_injection.secure_login.app.sanitize_input")
+    def patched_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
+
+    @tm.patch.function(
+        "dataset.cwe_89_sql_injection.insecure_signup.app.create_insecure_user_query"
+    )
+    def patched_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
+
+    @tm.patch.function("dataset.cwe_89_sql_injection.secure_signup.app.sanitize_input")
+    def patched_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
+
+    @tm.patch.function(
+        "dataset.cwe_89_sql_injection.insecure_second_layer.app.insecure_query"
+    )
+    def patched_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
+
+    @tm.patch.function(
+        "dataset.cwe_89_sql_injection.secure_second_layer.app.sanitize_query"
+    )
+    def patched_open_file_command(file: TaintedStr):
+        return TaintedStr(original_function(file))
+
+    return tm
 
 
-@pytest.fixture()
-def client(app):
-    return app.test_client()
+def test_fuzz_insecure_alphanumeric_login(taintmonkey):
+    from dataset.cwe_89_sql_injection.insecure_alphanumeric_login.app import app
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
 
 
-@pytest.fixture()
-def fuzzer(app):
-    # Corpus of SQL injection payloads
-    return DictionaryFuzzer(app, "plugins/cwe_89_sql_injection/corpus.txt")
+def test_fuzz_secure_alphanumeric_login(taintmonkey):
+    from dataset.cwe_89_sql_injection.secure_alphanumeric_login.app import app
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
 
 
-def test_taint_exception(client):
-    with pytest.raises(TaintException):
-        client.post("/insecure-signup?username=admin'--&password=test")
+def test_fuzz_insecure_alphanumeric_signup(taintmonkey):
+    from dataset.cwe_89_sql_injection.insecure_alphanumeric_signup.app import app
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
 
 
-def test_no_taint_exception(client):
-    # Expect no exception with secure endpoint
-    client.post("/secure-signup?username=admin'--&password=test")
+def test_fuzz_secure_alphanumeric_signup(taintmonkey):
+    from dataset.cwe_89_sql_injection.secure_alphanumeric_signup.app import app
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
 
 
-# TODO(bliutech): this test case is broken, need to fix it
-def test_fuzz(fuzzer):
-    from urllib.parse import urlencode
+def test_fuzz_insecure_login(taintmonkey):
+    from dataset.cwe_89_sql_injection.insecure_login.app import app
 
-    counter = 0
-    with fuzzer.get_context() as (client, inputs):
-        for data in inputs:
-            print(f"\n[Fuzz Attempt {counter}] Testing payload: {data}")
-            with pytest.raises(TaintException):
-                client.post(
-                    f"/insecure-signup?{urlencode({'username': data, 'password': 'test'})}"
-                )
-            counter += 1
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
+
+
+def test_fuzz_secure_login(taintmonkey):
+    from dataset.cwe_89_sql_injection.secure_login.app import app
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
+
+
+def test_fuzz_insecure_signup(taintmonkey):
+    from dataset.cwe_89_sql_injection.insecure_signup.app import app
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
+
+
+def test_fuzz_secure_signup(taintmonkey):
+    from dataset.cwe_89_sql_injection.secure_signup.app import app
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
+
+
+def test_fuzz_insecure_second_layer(taintmonkey):
+    from dataset.cwe_89_sql_injection.insecure_second_layer.app import app
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
+
+
+def test_fuzz_secure_second_layer(taintmonkey):
+    from dataset.cwe_89_sql_injection.secure_second_layer.app import app
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
 
 
 if __name__ == "__main__":
-    sys.exit(pytest.main([__file__, "-v"]))
+    sys.exit(pytest.main([__file__]))
