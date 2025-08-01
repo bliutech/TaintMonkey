@@ -36,16 +36,5 @@ def insecure_table():
     return table(name, age)
 
 
-@app.route("/secure_table")
-def secure_table():
-    name = request.args.get("name", "")
-    age = request.args.get("age", "")
-
-    if suspicious_input(name, age):
-        return "Invalid input detected", 400
-
-    return table(name, age)
-
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
