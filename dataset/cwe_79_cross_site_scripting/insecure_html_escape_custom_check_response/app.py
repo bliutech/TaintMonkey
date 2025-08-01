@@ -24,14 +24,5 @@ def insecure_xss():
     return say_hi(name)
 
 
-@app.route("/secure-xss")
-def secure_xss():
-    name = request.args.get("name", "user")
-    if suspicious_input(name):
-        return "XSS detected", 403
-
-    return say_hi(name)
-
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
