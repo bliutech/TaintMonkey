@@ -15,15 +15,5 @@ def insecure_welcome():
     return "Welcome!"
 
 
-@app.route("/secure_welcome", methods=["POST"])
-def secure_welcome():
-    if request.method == "POST":
-        username = request.form.get("username", "")
-        cleaner = Cleaner(scripts=True, javascript=True, style=True)
-        cleaned_username = cleaner.clean_html(username)
-        return f"Welcome, {cleaned_username}!"
-    return "Welcome!"
-
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
