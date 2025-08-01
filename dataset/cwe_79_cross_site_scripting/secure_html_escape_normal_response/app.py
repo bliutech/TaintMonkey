@@ -13,12 +13,6 @@ def set_cookie():
 
 # <script>alert(document.cookie)</script>
 # xss attack ^
-@app.route("/insecure_cookie")
-def insecure_cookie():
-    username = request.args.get("username", "")
-    return f"How are you, {username}?"
-
-
 @app.route("/secure_cookie")
 def secure_cookie():
     username = request.args.get("username", "")
