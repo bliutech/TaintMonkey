@@ -10,12 +10,6 @@ def user_input(score):
     return f"Your grade: {score}/100"
 
 
-@app.route("/grade_insecure")
-def grade_insecure():
-    score = request.args.get("score")
-    return user_input(score)
-
-
 @app.route("/grade_secure")
 def grade_secure():
     score = request.args.get("score", 0)
