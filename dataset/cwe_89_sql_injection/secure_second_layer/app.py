@@ -5,6 +5,10 @@ from db import db, init_db
 app = Flask(__name__)
 init_db(app)
 
+def sanitize_query(username):
+    query = text("SELECT * FROM user WHERE username = :username")
+    params = {"username": username}
+    return query, params
 
 @app.route("/secure-second-level", methods=["GET"])
 def secure_second_level():
@@ -14,7 +18,7 @@ def secure_second_level():
         return "Username is required", 400
 
     # second-level, getting from database when needed level, takes full string as a string rather
-    query = text(f"SELECT * FROM user WHERE username = :username")
+    query, params = sanitize_query(username)
 
     try:
         result = db.session.execute(query, {"username": username}).fetchall()
