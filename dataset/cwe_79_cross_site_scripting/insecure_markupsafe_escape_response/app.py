@@ -15,12 +15,5 @@ def vulnerable_xss():
     return say_hi(name)
 
 
-@app.get("/secure")
-def sanitized_xss():
-    name = request.args.get("name", "user")
-    name = escape(name)
-    return say_hi(name)
-
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
