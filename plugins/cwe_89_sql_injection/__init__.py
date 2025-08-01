@@ -24,11 +24,11 @@ import sys
 
 # Define sources, sanitizers, and sinks
 VERIFIERS = [
-    "dataset.secure_alphamumeric_signup.app.pattern_match"
-    "dataset.secure_alphanumeric_login.app.pattern_match"
-    "dataset.secure_login.app.sanitize_input"
-    "dataset.secure_second_layer.app.sanitize_query"
-    "dataset.secure_signup.app.sanitize_input"
+    "dataset.secure_alphamumeric_signup.app.pattern_match",
+    "dataset.secure_alphanumeric_login.app.pattern_match",
+    "dataset.secure_login.app.sanitize_input",
+    "dataset.secure_second_layer.app.sanitize_query",
+    "dataset.secure_signup.app.sanitize_input",
 ]
 SANITIZERS = []
 SINKS = []
