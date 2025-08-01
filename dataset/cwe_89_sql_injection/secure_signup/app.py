@@ -6,6 +6,12 @@ app = Flask(__name__)
 init_db(app)
 
 
+def sanitize_input(username, password):
+    query = text("INSERT INTO user (username, password) VALUES (:username, :password)")
+    params = {"username": username, "password": password}
+    return query, params
+
+
 @app.route("/secure-signup", methods=["POST"])
 def secure_signup():
     username = request.args.get("username")
@@ -15,10 +21,10 @@ def secure_signup():
         return "Username and password are required", 400
 
     # for inserting values as string literals rather than potential sql commands
-    query = text("INSERT INTO user (username, password) VALUES (:username, :password)")
+    query, params = sanitize_input(username, password)
 
     try:
-        db.session.execute(query, {"username": username, "password": password})
+        db.session.execute(query, params)
         db.session.commit()
         return "User created securely", 201
     except Exception as e:
