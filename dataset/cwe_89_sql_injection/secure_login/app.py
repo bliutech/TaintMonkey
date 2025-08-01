@@ -5,12 +5,14 @@ from db import db, init_db
 app = Flask(__name__)
 init_db(app)
 
+
 def sanitize_input(username, password):
     query = text(
         "SELECT * FROM user WHERE username = :username AND password = :password"
     )
     params = {"username": username, "password": password}
     return query, params
+
 
 @app.route("/secure-login", methods=["POST"])
 def secure_login():

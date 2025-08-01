@@ -4,10 +4,12 @@ from db import db, init_db
 app = Flask(__name__)
 init_db(app)
 
+
 def insecure_input(username, password):
     query = "SELECT * FROM user WHERE username = :username AND password = :password"
     params = {"username": username, "password": password}
     return query, params
+
 
 @app.route("/insecure-login", methods=["POST"])
 def secure_login():

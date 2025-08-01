@@ -5,10 +5,12 @@ from db import db, init_db
 app = Flask(__name__)
 init_db(app)
 
+
 def sanitize_query(username):
     query = text("SELECT * FROM user WHERE username = :username")
     params = {"username": username}
     return query, params
+
 
 @app.route("/secure-second-level", methods=["GET"])
 def secure_second_level():
