@@ -7,8 +7,11 @@ from flask.testing import FlaskClient
 
 from taintmonkey.client import register_taint_client
 from taintmonkey.fuzzer import Fuzzer
-from taintmonkey.patch import patch_function, original_function, MonkeyPatch
+from taintmonkey.patch import MonkeyPatch
 from taintmonkey.taint import TaintedStr
+
+patch_function = MonkeyPatch.patch_function
+original_function = MonkeyPatch.original_function
 
 
 class TaintException(Exception):
@@ -18,10 +21,13 @@ class TaintException(Exception):
 class TaintMonkey:
     """
     Core class for TaintMonkey library.
+
+    Credit to pytest for inspiration behind monkey patching storage + undoing here:
+    https://docs.pytest.org/en/stable/_modules/_pytest/monkeypatch.html
     """
 
-    _fuzzer: Fuzzer | None = None
-    patch = MonkeyPatch()
+    id_num = 1
+
 
     def __init__(
         self,
@@ -32,6 +38,11 @@ class TaintMonkey:
     ):
         self._app = app
         register_taint_client(app)
+
+        self._fuzzer = None
+
+        self._id_num = TaintMonkey.id_num
+        TaintMonkey.id_num += 1
 
         # Methods to be monkey patched
         self._sanitizers = sanitizers
@@ -86,7 +97,7 @@ class TaintMonkey:
         if sanitizer not in self._sanitizers:
             self._sanitizers.append(sanitizer)
 
-        @patch_function(sanitizer)
+        @patch_function(sanitizer, self._id_num)
         def patched_sanitizer(*args, **kwargs):
             # Call the original sanitizer function
             return TaintedStr(original_function(*args, **kwargs)).sanitize()
@@ -94,12 +105,12 @@ class TaintMonkey:
     def register_verifier(self, verifier: str):
         """
         Register a verifier to be used by TaintMonkey.
-        :param sanitizer: The path of the verifier to register.
+        :param verifier: The path of the verifier to register.
         """
         if verifier not in self._verifiers:
             self._verifiers.append(verifier)
 
-        @patch_function(verifier)
+        @patch_function(verifier, self._id_num)
         def patched_verifier(*args, **kwargs):
             # Check each arg to see if it is a TaintedStr
             for arg in args:
@@ -124,7 +135,7 @@ class TaintMonkey:
         if sink not in self._sinks:
             self._sinks.append(sink)
 
-        @patch_function(sink)
+        @patch_function(sink, self._id_num)
         def patched_sink(*args, **kwargs):
             # Check each arg to see if it is a TaintedStr
             for arg in args:
@@ -141,3 +152,12 @@ class TaintMonkey:
                         raise TaintException()
 
             return original_function(*args, **kwargs)
+
+
+    def __del__(self):
+        """
+        Automatically called during teardown
+
+        Calls undo to reverse monkey patching
+        """
+        MonkeyPatch.remove_patches(self._id_num)
