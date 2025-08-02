@@ -46,6 +46,7 @@ from sqlalchemy.engine import Result
 
 old_session_execute = sqlalchemy.orm.session.Session.execute
 
+
 @pytest.fixture()
 def taintmonkey():
     from dataset.cwe_89_sql_injection.insecure_alphanumeric_signup.app import app
@@ -60,46 +61,40 @@ def taintmonkey():
     )
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
+
     @tm.patch.function(
         "dataset.cwe_89_sql_injection.secure_alphanumeric_login.app.pattern_match"
     )
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
+
     @tm.patch.function(
         "dataset.cwe_89_sql_injection.insecure_alphanumeric_signup.app.pattern_match"
     )
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
+
     @tm.patch.function(
         "dataset.cwe_89_sql_injection.secure_alphanumeric_signup.app.pattern_match"
     )
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
-    @tm.patch.function(
-        "dataset.cwe_89_sql_injection.insecure_login.app.insecure_input"
-    )
+
+    @tm.patch.function("dataset.cwe_89_sql_injection.insecure_login.app.insecure_input")
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
-    @tm.patch.function(
-        "dataset.cwe_89_sql_injection.secure_login.app.sanitize_input"
-    )
+
+    @tm.patch.function("dataset.cwe_89_sql_injection.secure_login.app.sanitize_input")
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
+
     @tm.patch.function(
         "dataset.cwe_89_sql_injection.insecure_signup.app.create_insecure_user_query"
     )
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
-    @tm.patch.function(
-        "dataset.cwe_89_sql_injection.secure_signup.app.sanitize_input"
-    )
+
+    @tm.patch.function("dataset.cwe_89_sql_injection.secure_signup.app.sanitize_input")
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
 
@@ -108,16 +103,15 @@ def taintmonkey():
     )
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
+
     @tm.patch.function(
         "dataset.cwe_89_sql_injection.secure_second_layer.app.sanitize_query"
     )
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
+
     return tm
 
-    
     def test_fuzz_insecure_alphanumeric_login(taintmonkey):
         from dataset.cwe_89_sql_injection.insecure_alphanumeric_login.app import app
 
@@ -144,7 +138,7 @@ def taintmonkey():
         with taintmonkey.get_fuzzer().get_context() as (client, get_input):
             for data in get_input():
                 client.get(f"/secure?{urlencode({'file': data})}")
-    
+
     def test_fuzz_secure_alphanumeric_signup(taintmonkey):
         from dataset.cwe_89_sql_injection.secure_alphanumeric_signup.app import app
 
@@ -207,6 +201,7 @@ def taintmonkey():
         with taintmonkey.get_fuzzer().get_context() as (client, get_input):
             for data in get_input():
                 client.get(f"/secure?{urlencode({'file': data})}")
+
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__]))

@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+
 def execute_secure(function_name, arg):
     allowed_functions = {
         "len": len,
@@ -31,7 +32,7 @@ def secure_function():
     arg = request.args.get("arg", "")
 
     result, error, status_code = execute_secure_function(function_name, arg)
-    
+
     if error:
         return jsonify({"error": error}), status_code
     else:
