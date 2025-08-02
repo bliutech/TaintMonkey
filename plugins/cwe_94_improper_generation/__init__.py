@@ -40,19 +40,19 @@ def taintmonkey():
     )
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
+
     @tm.patch.function(
         "dataset.cwe_94_improper_generation.insecure_eval_query_parameter.app.calculate_expression"
     )
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
+
     @tm.patch.function(
         "dataset.cwe_94_improper_generation.secure_eval_query_parameter.app.evaluate_math_expression"
     )
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
+
     @tm.patch.function(
         "dataset.cwe_94_improper_generation.insecure_format_string.app.format_string_eval"
     )
@@ -70,27 +70,28 @@ def taintmonkey():
     )
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
+
     @tm.patch.function(
         "dataset.cwe_94_improper_generation.secure_function_access.app.execute_secure"
     )
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
+
     @tm.patch.function(
         "dataset.cwe_94_improper_generation.insecure_unchecked_exec.app.execute_insecure"
     )
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
+
     @tm.patch.function(
         "dataset.cwe_94_improper_generation.secure_unchecked_exec.app.execute_secure"
     )
     def patched_open_file_command(file: TaintedStr):
         return TaintedStr(original_function(file))
-    
+
     return tm
-    
+
+
 def test_fuzz_insecure_eval_query_json(taintmonkey):
     from dataset.cwe_94_improper_generation.insecure_eval_query_json.app import app
 
@@ -99,6 +100,7 @@ def test_fuzz_insecure_eval_query_json(taintmonkey):
     with taintmonkey.get_fuzzer().get_context() as (client, get_input):
         for data in get_input():
             client.get(f"/secure?{urlencode({'file': data})}")
+
 
 def test_fuzz_secure_eval_query_json(taintmonkey):
     from dataset.cwe_94_improper_generation.secure_eval_query_json.app import app
@@ -109,6 +111,7 @@ def test_fuzz_secure_eval_query_json(taintmonkey):
         for data in get_input():
             client.get(f"/secure?{urlencode({'file': data})}")
 
+
 def test_fuzz_insecure_format_string(taintmonkey):
     from dataset.cwe_94_improper_generation.insecure_format_string.app import app
 
@@ -117,6 +120,7 @@ def test_fuzz_insecure_format_string(taintmonkey):
     with taintmonkey.get_fuzzer().get_context() as (client, get_input):
         for data in get_input():
             client.get(f"/secure?{urlencode({'file': data})}")
+
 
 def test_fuzz_secure_format_string(taintmonkey):
     from dataset.cwe_94_improper_generation.secure_format_string.app import app
@@ -127,6 +131,7 @@ def test_fuzz_secure_format_string(taintmonkey):
         for data in get_input():
             client.get(f"/secure?{urlencode({'file': data})}")
 
+
 def test_fuzz_insecure_function_access(taintmonkey):
     from dataset.cwe_94_improper_generation.insecure_function_access.app import app
 
@@ -135,6 +140,7 @@ def test_fuzz_insecure_function_access(taintmonkey):
     with taintmonkey.get_fuzzer().get_context() as (client, get_input):
         for data in get_input():
             client.get(f"/secure?{urlencode({'file': data})}")
+
 
 def test_fuzz_secure_function_access(taintmonkey):
     from dataset.cwe_94_improper_generation.secure_function_access.app import app
@@ -145,6 +151,7 @@ def test_fuzz_secure_function_access(taintmonkey):
         for data in get_input():
             client.get(f"/secure?{urlencode({'file': data})}")
 
+
 def test_fuzz_insecure_unchecked_exec(taintmonkey):
     from dataset.cwe_94_improper_generation.insecure_unchecked_exec.app import app
 
@@ -154,6 +161,7 @@ def test_fuzz_insecure_unchecked_exec(taintmonkey):
         for data in get_input():
             client.get(f"/secure?{urlencode({'file': data})}")
 
+
 def test_fuzz_secure_unchecked_exec(taintmonkey):
     from dataset.cwe_94_improper_generation.secure_unchecked_exec.app import app
 
@@ -162,6 +170,7 @@ def test_fuzz_secure_unchecked_exec(taintmonkey):
     with taintmonkey.get_fuzzer().get_context() as (client, get_input):
         for data in get_input():
             client.get(f"/secure?{urlencode({'file': data})}")
+
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__]))
