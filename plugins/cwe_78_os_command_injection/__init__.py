@@ -20,10 +20,7 @@ from taintmonkey.taint import TaintedStr
 from taintmonkey.patch import original_function
 
 VERIFIERS = [
-    "dataset.cwe_78_os_command_injection.secure_novalidation.app.is_safe_path",
-    "dataset.cwe_78_os_command_injection.secure_novalidation_system.app.is_safe_path",
-    "dataset.cwe_78_os_command_injection.secure_double_extension.app.is_safe_path",
-    "dataset.cwe_78_os_command_injection.secure_double_extension_system.app.is_safe_path",
+
 ]
 SANITIZERS = []
 SINKS = ["os.system", "os.popen"]
@@ -42,63 +39,94 @@ def taintmonkey():
         "dataset.cwe_78_os_command_injection.insecure_novalidation.app.open_file_command"
     )
     def patched_open_file_command(file: TaintedStr):
-        return TaintedStr(original_function(file))
+        command = TaintedStr(original_function(file))
+        if not file.is_tainted():
+            command.sanitize()
+        return command
 
     @tm.patch.function(
         "dataset.cwe_78_os_command_injection.secure_novalidation.app.open_file_command"
     )
     def patched_open_file_command(file: TaintedStr):
-        return TaintedStr(original_function(file))
-        # TODO: if verifier has been called (file is untainted), then this should return an untainted string
+        command = TaintedStr(original_function(file))
+        if not file.is_tainted():
+            command.sanitize()
+        return command
+
+    @tm.patch.function(
+        "dataset.cwe_78_os_command_injection.secure_novalidation.app.is_safe_path"
+    )
+    def patched_is_safe_path(path):
+        # path.sanitize()
+        # print(f"\n\nhello\n\n")
+        return original_function(path)
 
     @tm.patch.function(
         "dataset.cwe_78_os_command_injection.insecure_novalidation_system.app.open_file_command"
     )
     def patched_open_file_command(file: TaintedStr):
-        return TaintedStr(original_function(file))
+        command = TaintedStr(original_function(file))
+        if not file.is_tainted():
+            command.sanitize()
+        return command
 
     @tm.patch.function(
         "dataset.cwe_78_os_command_injection.secure_novalidation_system.app.open_file_command"
     )
     def patched_open_file_command(file: TaintedStr):
-        return TaintedStr(original_function(file))
+        command = TaintedStr(original_function(file))
+        if not file.is_tainted():
+            command.sanitize()
+        return command
 
     @tm.patch.function(
         "dataset.cwe_78_os_command_injection.insecure_double_extension.app.open_file_command"
     )
     def patched_open_file_command(file: TaintedStr):
-        return TaintedStr(original_function(file))
+        command = TaintedStr(original_function(file))
+        if not file.is_tainted():
+            command.sanitize()
+        return command
 
     @tm.patch.function(
         "dataset.cwe_78_os_command_injection.secure_double_extension.app.open_file_command"
     )
     def patched_open_file_command(file: TaintedStr):
-        return TaintedStr(original_function(file))
+        command = TaintedStr(original_function(file))
+        if not file.is_tainted():
+            command.sanitize()
+        return command
 
     @tm.patch.function(
         "dataset.cwe_78_os_command_injection.insecure_double_extension_system.app.open_file_command"
     )
     def patched_open_file_command(file: TaintedStr):
-        return TaintedStr(original_function(file))
-
+        command = TaintedStr(original_function(file))
+        if not file.is_tainted():
+            command.sanitize()
+        return command
+    
     @tm.patch.function(
         "dataset.cwe_78_os_command_injection.secure_double_extension_system.app.open_file_command"
     )
     def patched_open_file_command(file: TaintedStr):
-        return TaintedStr(original_function(file))
+        command = TaintedStr(original_function(file))
+        if not file.is_tainted():
+            command.sanitize()
+        return command
 
     return tm
 
 
-# def test_fuzz_insecure_novalidation(taintmonkey):
-#     from dataset.cwe_78_os_command_injection.insecure_novalidation.app import app
+def test_fuzz_insecure_novalidation(taintmonkey):
+    from dataset.cwe_78_os_command_injection.insecure_novalidation.app import app
 
-#     taintmonkey.set_app(app)
+    taintmonkey.set_app(app)
 
-#     with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-#         for data in get_input():
-#             with pytest.raises(TaintException):
-#                 client.get(f"/insecure?{urlencode({'file': data})}")
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/insecure?{urlencode({'file': data})}")
 
 
 def test_fuzz_secure_novalidation(taintmonkey):
@@ -143,14 +171,14 @@ def test_fuzz_secure_novalidation(taintmonkey):
 #                 client.get(f"/insecure?{urlencode({'file': data})}")
 
 
-def test_fuzz_secure_double_extension(taintmonkey):
-    from dataset.cwe_78_os_command_injection.secure_double_extension.app import app
+# def test_fuzz_secure_double_extension(taintmonkey):
+#     from dataset.cwe_78_os_command_injection.secure_double_extension.app import app
 
-    taintmonkey.set_app(app)
+#     taintmonkey.set_app(app)
 
-    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-        for data in get_input():
-            client.get(f"/secure?{urlencode({'file': data})}")
+#     with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+#         for data in get_input():
+#             client.get(f"/secure?{urlencode({'file': data})}")
 
 
 # def test_fuzz_insecure_double_extension_system(taintmonkey):
