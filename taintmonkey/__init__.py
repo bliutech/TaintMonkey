@@ -17,7 +17,7 @@ patch_function = taintmonkey.patch.patch_function
 
 
 # Set original function
-original_function = taintmonkey.original_function
+original_function = taintmonkey.patch.original_function
 
 
 # Monkey patch function that calls after every unit test so that it forces the deleting of TaintMonkey objects
