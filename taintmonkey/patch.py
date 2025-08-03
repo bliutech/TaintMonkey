@@ -20,7 +20,7 @@ from contextvars import ContextVar
 from taintmonkey.taint import TaintedStr
 
 
-__all__ = ["MonkeyPatch"]
+__all__ = ["MonkeyPatch", "patch_function", "original_function"]
 
 
 class PatchException(Exception):
@@ -60,7 +60,6 @@ class PatchAssist:
     those in their respective original function counterparts.
     """
 
-
     def extract_module_and_function(func_path: str) -> tuple[str, str]:
         """
         Extracts module and function names from path.
@@ -76,7 +75,6 @@ class PatchAssist:
 
         return (module, func)
 
-
     def load_module(module_name: str) -> ModuleType:
         try:
             module = import_module(module_name)
@@ -84,7 +82,6 @@ class PatchAssist:
             raise PatchException(e)
 
         return module
-
 
     @staticmethod
     def type_check(orig_f: Callable, new_f: Callable):
@@ -142,7 +139,7 @@ class PatchAssist:
                 for i in range(len(type_str)):
                     if type_str[i] == ".":
                         index = i
-                type_str = type_str[index + 1:]
+                type_str = type_str[index + 1 :]
             expr = ast.parse(type_str, mode="eval")
             if not is_safe_annotation(expr.body):
                 raise ValueError("Unsafe type annotation")
@@ -187,7 +184,7 @@ class PatchAssist:
             except TypeError:
                 pass
             if isinstance(this_orig, types.UnionType) or isinstance(
-                    this_new, types.UnionType
+                this_new, types.UnionType
             ):
                 # Iterate through type in Union types
                 orig_union_types = this_orig.__args__
@@ -202,7 +199,9 @@ class PatchAssist:
                     orig_union_type = orig_union_types[i]
                     new_union_type = new_union_types[i]
                     # Standardize annotations
-                    standardize_and_check_annotations(orig_union_type, new_union_type, test)
+                    standardize_and_check_annotations(
+                        orig_union_type, new_union_type, test
+                    )
 
             else:
                 # Standardize annotations
@@ -260,148 +259,99 @@ class MonkeyPatch:
 
     _patch_ctx = ContextVar("patch_ctx")
     original_function = ContextVarProxy(_patch_ctx)
-    _patched_function_cache: dict[str, list[tuple[int, tuple[object, str, object]]]] = {}
-
-
-    @staticmethod
-    def patch_function(func_path: str, group: int = -1):
-        """
-        Decorator to monkey patch a function.
-
-        :param func_path: the function path of the added patched function as a string separated by .
-        :param group: the affiliated group number that this patch belongs to (typically assigned by TaintMonkey object).
-        If you want to create your own custom group, it is recommended to use negative values because positive values
-        will be used by TaintMonkey instances. The value 0 is reserved for the original function prior to any monkey
-        patching done by this class. Using the value 0 unwisely can lead to errors, proceed with caution
-        """
-        module_name, func_name = PatchAssist.extract_module_and_function(func_path)
-
-        # Monkey patcher decorator
-        def patcher(f):
-            module = PatchAssist.load_module(module_name)
-            func = getattr(module, func_name)
-
-            PatchAssist.type_check(func, f)
-            setattr(module, func_name, f)
-
-            MonkeyPatch.add_patched_function(func_path, (module, func_name, func), group)
-
-            # Store the original function in context variable
-            MonkeyPatch._patch_ctx.set(func)
-
-            return f
-
-        return patcher
-
-
-    @staticmethod
-    def add_patched_function(func_path: str, orig_info: tuple[object, str, object], group: int):
-        """
-        Adds information on a patched function to the cache (shared between all instances)
-
-        The cache is formatted as so:
-        Parent Dictionary with func_names as keys
-        --> Values: List of monkey patching change logs
-        ----> Values: Tuples with the following info:
-        ------> Index One
-        ------> Index Two: Tuples with the original module, function name, and function object
-
-        If the function has been patched, the info is simply added to its respective change log list
-
-        If this function has not been patched before, the original info passed becomes the default function that will be
-        preserved at the first index of the newly created change log list (0). Its tuple will also be assigned group 0.
-        Be cautious adding to group 0.
-
-        :param func_path: the function path of the added patched function as a string separated by .
-        :param orig_info: a tuple of the original module, function name, and function object
-        :param group: the affiliated group number that this patch belongs to (typically assigned by TaintMonkey object)
-        Refer to the function patch_function to see how group numbers should be chosen.
-        """
-        pfc = MonkeyPatch._patched_function_cache
-
-        if pfc.get(func_path) is None:
-            pfc[func_path] = [(0, orig_info), (group, orig_info)]
-        else:
-            pfc[func_path].append((group, orig_info))
-
-        print(pfc)
-
-
-    @staticmethod
-    def remove_patches(group: int):
-        """
-        Removes all patches associated with the given group number and refreshes the patching. It will switch the
-        function back to the most recent patched version of itself, or the original function that is stored at index 0
-        with group 0 (unless tampered with)
-
-        :param group: the affiliated group number that this patch belongs to (typically assigned by TaintMonkey object)
-        """
-        pfc = MonkeyPatch._patched_function_cache
-
-        for func_name in pfc:
-            change_logs = pfc[func_name]
-
-            for i in range(len(change_logs) - 1, -1, -1):
-                change_log = change_logs[i]
-
-                cl_group = change_log[0]
-                if cl_group == group:
-                    change_logs.pop(i)
-
-        MonkeyPatch.update_patches()
-
-
-    @staticmethod
-    def update_patches():
-        pfc = MonkeyPatch._patched_function_cache
-
-        for change_logs in list(pfc.values()):
-            if len(change_logs) > 0:
-                module, func_name, func = change_logs[-1][1]
-
-                setattr(module, func_name, func)
-
+    _patched_function_cache: dict[str, tuple[object, str, object]] = {}
 
     @staticmethod
     def reset_cache():
         pfc = MonkeyPatch._patched_function_cache
 
-        for change_logs in list(pfc.values()):
-            done = False
+        for func_path in pfc:
+            MonkeyPatch.remove_patch(func_path)
 
-            for change_log in change_logs:
-                if not done and change_log[0] == 0:
-                    module, func_name, func = change_log[0]
+    @staticmethod
+    def remove_patch(func_path: str):
+        pfc = MonkeyPatch._patched_function_cache
 
-                    setattr(module, func_name, func)
+        orig_info = pfc.get(func_path)
+        if orig_info is None:  # Exits if the function has not been monkey patched
+            return
 
-                    done = True
+        module, func_name, func = orig_info
+        try:
+            setattr(module, func_name, func)
+        except Exception:
+            raise Exception(f"Error removing patch for {func_path}")
 
-        pfc = {}
+    @staticmethod
+    def add_patch(func_path: str, orig_info: tuple[object, str, object]):
+        pfc = MonkeyPatch._patched_function_cache
 
-    '''def patch_function(self, func_path: str):
+        if pfc.get(func_path) is None:
+            MonkeyPatch._patched_function_cache[func_path] = orig_info
+
+    @staticmethod
+    def function(func_path: str):
         """
         Decorator to monkey patch a function.
+
+        :param func_path: the function path of the function being patched from the cwd to the function, as a str.
+        NOTE: should be formatted as separated by "."; e.g. --> "dir.module.func"
         """
+        if func_path in MonkeyPatch._patched_function_cache:
+            MonkeyPatch.remove_patch(func_path)
+
         module_name, func_name = PatchAssist.extract_module_and_function(func_path)
 
         # Monkey patcher decorator
         def patcher(f):
             module = PatchAssist.load_module(module_name)
             func = getattr(module, func_name)
+
             PatchAssist.type_check(func, f)
+
             setattr(module, func_name, f)
+
+            MonkeyPatch._patched_function_cache[func_path] = (module, func_name, func)
+
             # Store the original function in context variable
             MonkeyPatch._patch_ctx.set(func)
             return f
 
-        return patcher'''
+        return patcher
 
-
-    @staticmethod
-    def patch_class(class_path: str):
+    def patch_class(self, class_path: str):
         """
         Monkey patches a class.
         """
         # TODO(bliutech): add a similar monkey patcher decorator for classes / objects
         pass
+
+
+_patch_ctx = ContextVar("patch_ctx")
+original_function = ContextVarProxy(_patch_ctx)
+
+
+def patch_function(func_path: str):
+    """
+    Decorator to monkey patch a function.
+
+    :param func_path: the function path of the function being patched from the cwd to the function, as a str.
+    NOTE: should be formatted as separated by "."; e.g. --> "dir.module.func"
+    """
+
+    module_name, func_name = PatchAssist.extract_module_and_function(func_path)
+
+    # Monkey patcher decorator
+    def patcher(f):
+        module = PatchAssist.load_module(module_name)
+        func = getattr(module, func_name)
+
+        PatchAssist.type_check(func, f)
+
+        setattr(module, func_name, f)
+
+        # Store the original function in context variable
+        _patch_ctx.set(func)
+        return f
+
+    return patcher

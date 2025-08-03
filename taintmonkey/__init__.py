@@ -10,8 +10,20 @@ from taintmonkey.fuzzer import Fuzzer
 from taintmonkey.patch import MonkeyPatch
 from taintmonkey.taint import TaintedStr
 
-patch_function = MonkeyPatch.patch_function
-original_function = MonkeyPatch.original_function
+
+# Monkey patch function that calls after every unit test so that it forces the deleting of TaintMonkey objects
+import _pytest.python
+import gc
+
+old_setup = _pytest.python.Function.setup
+
+
+def new_setup(self) -> None:
+    MonkeyPatch.reset_cache()
+    return old_setup(self)
+
+
+setattr(_pytest.python.Function, "setup", new_setup)
 
 
 class TaintException(Exception):
@@ -21,13 +33,10 @@ class TaintException(Exception):
 class TaintMonkey:
     """
     Core class for TaintMonkey library.
-
-    Credit to pytest for inspiration behind monkey patching storage + undoing here:
-    https://docs.pytest.org/en/stable/_modules/_pytest/monkeypatch.html
     """
 
-    id_num = 1
-
+    _fuzzer: Fuzzer | None = None
+    patch = MonkeyPatch()
 
     def __init__(
         self,
@@ -38,11 +47,6 @@ class TaintMonkey:
     ):
         self._app = app
         register_taint_client(app)
-
-        self._fuzzer = None
-
-        self._id_num = TaintMonkey.id_num
-        TaintMonkey.id_num += 1
 
         # Methods to be monkey patched
         self._sanitizers = sanitizers
@@ -97,10 +101,12 @@ class TaintMonkey:
         if sanitizer not in self._sanitizers:
             self._sanitizers.append(sanitizer)
 
-        @patch_function(sanitizer, self._id_num)
+        @TaintMonkey.patch.function(sanitizer)
         def patched_sanitizer(*args, **kwargs):
             # Call the original sanitizer function
-            return TaintedStr(original_function(*args, **kwargs)).sanitize()
+            return TaintedStr(
+                TaintMonkey.patch.original_function(*args, **kwargs)
+            ).sanitize()
 
     def register_verifier(self, verifier: str):
         """
@@ -110,7 +116,7 @@ class TaintMonkey:
         if verifier not in self._verifiers:
             self._verifiers.append(verifier)
 
-        @patch_function(verifier, self._id_num)
+        @TaintMonkey.patch.function(verifier)
         def patched_verifier(*args, **kwargs):
             # Check each arg to see if it is a TaintedStr
             for arg in args:
@@ -125,7 +131,7 @@ class TaintMonkey:
                     value.sanitize()
 
             # Call the original verifier function
-            return original_function(*args, **kwargs)
+            return TaintMonkey.patch.original_function(*args, **kwargs)
 
     def register_sink(self, sink: str):
         """
@@ -135,7 +141,7 @@ class TaintMonkey:
         if sink not in self._sinks:
             self._sinks.append(sink)
 
-        @patch_function(sink, self._id_num)
+        @TaintMonkey.patch.function(sink)
         def patched_sink(*args, **kwargs):
             # Check each arg to see if it is a TaintedStr
             for arg in args:
@@ -151,13 +157,7 @@ class TaintMonkey:
                     if value.is_tainted():
                         raise TaintException()
 
-            return original_function(*args, **kwargs)
-
+            return TaintMonkey.patch.original_function(*args, **kwargs)
 
     def __del__(self):
-        """
-        Automatically called during teardown
-
-        Calls undo to reverse monkey patching
-        """
-        MonkeyPatch.remove_patches(self._id_num)
+        MonkeyPatch.reset_cache()
