@@ -77,7 +77,7 @@ class PatchAssist:
         return (module, func)
 
     @staticmethod
-    def load_module(module_name: str, depth = 0) -> ModuleType:
+    def load_module(module_name: str, depth=0) -> ModuleType:
         """
         Loads the parent module or class of a function
         """
@@ -86,7 +86,7 @@ class PatchAssist:
         path = [x for x in filter(lambda xi: xi, module_name.split("."))]
 
         if depth > 0:
-            module= ".".join(path[:depth * -1])
+            module = ".".join(path[: depth * -1])
         else:
             module = module_name
 
@@ -344,6 +344,31 @@ class MonkeyPatch:
         pass
 
 
+"""
+ALL CODE BELOW EXISTS TO SUPPORT LEGACY METHODS OF PATCHING, NOT RECOMMENDED FOR USE
+"""
+
+
+def extract_module_and_function(func_path: str) -> tuple[str, str]:
+    return PatchAssist.extract_module_and_function(func_path)
+
+
+def load_module(module_name: str) -> ModuleType:
+    return PatchAssist.load_module(module_name)
+
+
+def type_check(orig_f: Callable, new_f: Callable):
+    """
+    Type checks the original function with the function used
+    for monkey patching to ensure that they have the same type
+    signature.
+
+    Raises an exception if part of the function signature does not match.
+    """
+
+    PatchAssist.type_check(orig_f, new_f)
+
+
 _patch_ctx = ContextVar("patch_ctx")
 original_function = ContextVarProxy(_patch_ctx)
 
@@ -351,6 +376,7 @@ original_function = ContextVarProxy(_patch_ctx)
 def patch_function(func_path: str):
     """
     Decorator to monkey patch a function.
+    NOTE: This one outside the main MonkeyPatch class is not undone automatically
 
     :param func_path: the function path of the function being patched from the cwd to the function, as a str.
     NOTE: should be formatted as separated by "."; e.g. --> "dir.module.func"
@@ -372,3 +398,11 @@ def patch_function(func_path: str):
         return f
 
     return patcher
+
+
+def patch_class(class_path: str):
+    """
+    Monkey patches a class.
+    """
+    # TODO(bliutech): add a similar monkey patcher decorator for classes / objects
+    pass
