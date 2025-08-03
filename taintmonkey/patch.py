@@ -60,6 +60,7 @@ class PatchAssist:
     those in their respective original function counterparts.
     """
 
+    @staticmethod
     def extract_module_and_function(func_path: str) -> tuple[str, str]:
         """
         Extracts module and function names from path.
@@ -75,11 +76,27 @@ class PatchAssist:
 
         return (module, func)
 
-    def load_module(module_name: str) -> ModuleType:
+    @staticmethod
+    def load_module(module_name: str, depth = 0) -> ModuleType:
+        """
+        Loads the parent module or class of a function
+        """
+
+        # Remove empty strings from path
+        path = [x for x in filter(lambda xi: xi, module_name.split("."))]
+
+        if depth > 0:
+            module= ".".join(path[:depth * -1])
+        else:
+            module = module_name
+
         try:
-            module = import_module(module_name)
-        except Exception as e:
-            raise PatchException(e)
+            module = import_module(module)
+        except ModuleNotFoundError:
+            return PatchAssist.load_module(module_name, depth + 1)
+
+        for i in range(len(path) - depth, len(path)):
+            module = getattr(module, path[i])
 
         return module
 
