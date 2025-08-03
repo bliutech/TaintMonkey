@@ -5,6 +5,7 @@ Utility data structures and methods for TaintMonkey.
 from flask import Flask
 from flask.testing import FlaskClient
 
+import taintmonkey.patch
 from taintmonkey.client import register_taint_client
 from taintmonkey.fuzzer import Fuzzer
 from taintmonkey.patch import MonkeyPatch
@@ -13,7 +14,6 @@ from taintmonkey.taint import TaintedStr
 
 # Monkey patch function that calls after every unit test so that it forces the deleting of TaintMonkey objects
 import _pytest.python
-import gc
 
 old_setup = _pytest.python.Function.setup
 
@@ -21,6 +21,10 @@ old_setup = _pytest.python.Function.setup
 def new_setup(self) -> None:
     MonkeyPatch.reset_cache()
     return old_setup(self)
+
+
+# Set patch_function
+patch_function = taintmonkey.patch.patch_function
 
 
 setattr(_pytest.python.Function, "setup", new_setup)
