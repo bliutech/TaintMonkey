@@ -67,7 +67,7 @@ class PatchAssist:
         """
 
         # Remove empty strings from path
-        path = list(filter(lambda x: x, func_path.split(".")))
+        path = [x for x in filter(lambda xi: xi, func_path.split("."))]
         if len(path) < 2:
             raise PatchException("Missing module or function from func_path.")
 
@@ -83,9 +83,11 @@ class PatchAssist:
         """
 
         # Remove empty strings from path
-        path = list(filter(lambda x: x, module_name.split(".")))
+        path = [x for x in filter(lambda xi: xi, module_name.split("."))]
 
-        if depth > 0:
+        if depth >= len(path):
+            raise PatchException(f"Module couldn't be found in: {module_name}")
+        elif 0 < depth < len(path):
             module = ".".join(path[: depth * -1])
         else:
             module = module_name
