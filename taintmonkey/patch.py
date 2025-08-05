@@ -279,19 +279,23 @@ class MonkeyPatch:
     _patch_ctx = ContextVar("patch_ctx")
     original_function = ContextVarProxy(_patch_ctx)
     _patched_function_cache: dict[str, tuple[object, str, object]] = {}
+    _patched_function_undo: dict[str, bool] = {}
 
     @staticmethod
     def reset_cache():
         pfc = MonkeyPatch._patched_function_cache
 
-        for func_path in pfc:
-            MonkeyPatch.remove_patch(func_path)
+        func_paths = list(pfc.keys())
+        for func_path in func_paths:
+            undo = MonkeyPatch._patched_function_undo.get(func_path)
+            if undo is not None and undo:
+                MonkeyPatch.remove_patch(func_path)
 
     @staticmethod
     def remove_patch(func_path: str):
         pfc = MonkeyPatch._patched_function_cache
 
-        orig_info = pfc.get(func_path)
+        orig_info = pfc.pop(func_path, None)
         if orig_info is None:  # Exits if the function has not been monkey patched
             return
 
@@ -302,22 +306,24 @@ class MonkeyPatch:
             raise Exception(f"Error removing patch for {func_path}")
 
     @staticmethod
-    def add_patch(func_path: str, orig_info: tuple[object, str, object]):
+    def add_patch(func_path: str, orig_info: tuple[object, str, object], undo: bool):
         pfc = MonkeyPatch._patched_function_cache
 
         if pfc.get(func_path) is None:
             MonkeyPatch._patched_function_cache[func_path] = orig_info
 
+        MonkeyPatch._patched_function_undo[func_path] = undo
+
     @staticmethod
-    def function(func_path: str):
+    def function(func_path: str, undo: bool = True):
         """
         Decorator to monkey patch a function.
 
         :param func_path: the function path of the function being patched from the cwd to the function, as a str.
         NOTE: should be formatted as separated by "."; e.g. --> "dir.module.func"
+        :param undo: whether to undo the function when the cache is reset
         """
-        if func_path in MonkeyPatch._patched_function_cache:
-            MonkeyPatch.remove_patch(func_path)
+        MonkeyPatch.remove_patch(func_path)
 
         module_name, func_name = PatchAssist.extract_module_and_function(func_path)
 
@@ -330,7 +336,7 @@ class MonkeyPatch:
 
             setattr(module, func_name, f)
 
-            MonkeyPatch._patched_function_cache[func_path] = (module, func_name, func)
+            MonkeyPatch.add_patch(func_path, (module, func_name, func), undo)
 
             # Store the original function in context variable
             MonkeyPatch._patch_ctx.set(func)
@@ -338,7 +344,8 @@ class MonkeyPatch:
 
         return patcher
 
-    def patch_class(self, class_path: str):
+    @staticmethod
+    def patch_class(class_path: str):
         """
         Monkey patches a class.
         """
@@ -347,64 +354,25 @@ class MonkeyPatch:
 
 
 """
-ALL CODE BELOW EXISTS TO SUPPORT LEGACY METHODS OF PATCHING, NOT RECOMMENDED FOR USE
+All code below exists to support legacy methods of patching
 """
 
 
-def extract_module_and_function(func_path: str) -> tuple[str, str]:
-    return PatchAssist.extract_module_and_function(func_path)
+extract_module_and_function = PatchAssist.extract_module_and_function
 
 
-def load_module(module_name: str) -> ModuleType:
-    return PatchAssist.load_module(module_name)
+load_module = PatchAssist.load_module
 
 
-def type_check(orig_f: Callable, new_f: Callable):
-    """
-    Type checks the original function with the function used
-    for monkey patching to ensure that they have the same type
-    signature.
-
-    Raises an exception if part of the function signature does not match.
-    """
-
-    PatchAssist.type_check(orig_f, new_f)
+type_check = PatchAssist.type_check
 
 
-_patch_ctx = ContextVar("patch_ctx")
-original_function = ContextVarProxy(_patch_ctx)
+original_function = MonkeyPatch.original_function
 
 
-def patch_function(func_path: str):
-    """
-    Decorator to monkey patch a function.
-    NOTE: This one outside the main MonkeyPatch class is not undone automatically
-
-    :param func_path: the function path of the function being patched from the cwd to the function, as a str.
-    NOTE: should be formatted as separated by "."; e.g. --> "dir.module.func"
-    """
-
-    module_name, func_name = PatchAssist.extract_module_and_function(func_path)
-
-    # Monkey patcher decorator
-    def patcher(f):
-        module = PatchAssist.load_module(module_name)
-        func = getattr(module, func_name)
-
-        PatchAssist.type_check(func, f)
-
-        setattr(module, func_name, f)
-
-        # Store the original function in context variable
-        _patch_ctx.set(func)
-        return f
-
-    return patcher
+# When using this, the default for patched functions is to not be undone, unlike in MonkeyPatch, where it's the opposite
+def patch_function(func_path: str, undo: bool = False):
+    return MonkeyPatch.function(func_path, undo)
 
 
-def patch_class(class_path: str):
-    """
-    Monkey patches a class.
-    """
-    # TODO(bliutech): add a similar monkey patcher decorator for classes / objects
-    pass
+patch_class = MonkeyPatch.patch_class
