@@ -166,6 +166,3 @@ class TaintMonkey:
                         raise TaintException()
 
             return TaintMonkey.patch.original_function(*args, **kwargs)
-
-    def __del__(self):
-        MonkeyPatch.reset_cache()
