@@ -112,9 +112,7 @@ class TaintMonkey:
         @TaintMonkey.patch.function(sanitizer)
         def patched_sanitizer(*args, **kwargs):
             # Call the original sanitizer function
-            return TaintedStr(
-                TaintMonkey.patch.original_function(*args, **kwargs)
-            ).sanitize()
+            return TaintedStr(original_function(*args, **kwargs)).sanitize()
 
     def register_verifier(self, verifier: str):
         """
@@ -139,7 +137,7 @@ class TaintMonkey:
                     value.sanitize()
 
             # Call the original verifier function
-            return TaintMonkey.patch.original_function(*args, **kwargs)
+            return original_function(*args, **kwargs)
 
     def register_sink(self, sink: str):
         """
@@ -164,5 +162,4 @@ class TaintMonkey:
                     # If it is, check if its tainted
                     if value.is_tainted():
                         raise TaintException()
-
-            return TaintMonkey.patch.original_function(*args, **kwargs)
+            return original_function(*args, **kwargs)

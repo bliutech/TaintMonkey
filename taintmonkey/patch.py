@@ -334,7 +334,22 @@ class MonkeyPatch:
 
             PatchAssist.type_check(func, f)
 
-            setattr(module, func_name, f)
+            def orig_func_adder(*args, **kwargs):
+                orig_info = MonkeyPatch._patched_function_cache.get(func_path)
+
+                if orig_info is None:
+                    raise PatchException(
+                        "Attempted to retrieve original function but could not be found in cache"
+                    )
+
+                orig_func = orig_info[2]
+
+                # Store the original function in context variable
+                MonkeyPatch._patch_ctx.set(orig_func)
+
+                return f(*args, **kwargs)
+
+            setattr(module, func_name, orig_func_adder)
 
             MonkeyPatch.add_patch(func_path, (module, func_name, func), undo)
 
