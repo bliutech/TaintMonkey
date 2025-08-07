@@ -6,6 +6,10 @@ import html
 app = Flask(__name__)
 
 
+def say_hello(name):
+    return f"Hello, {name}!"
+
+
 @app.route("/form_insecure")
 def form():
     return """
@@ -18,7 +22,7 @@ def form():
 @app.post("/submit_insecure")
 def submit_insecure():
     username = request.form["username"]
-    return f"Hello, {username}!"
+    return say_hello(username)
 
 
 @app.route("/form_secure")
@@ -39,7 +43,7 @@ def submit_secure():
         # replace the username with "Guest"
         upd_username = "Guest"
 
-    return f"Hello, {upd_username}!"
+    return say_hello(upd_username)
 
 
 if __name__ == "__main__":

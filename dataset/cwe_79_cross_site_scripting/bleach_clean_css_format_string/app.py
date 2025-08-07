@@ -4,14 +4,7 @@ import bleach
 app = Flask(__name__)
 
 
-@app.route("/error")
-def error():
-    return "Error: Invalid color"
-
-
-@app.route("/style_insecure")
-def style_insecure():
-    color = request.args.get("color", "black")
+def gset_text(color):
     return f"""
         <html>
             <head>
@@ -27,6 +20,17 @@ def style_insecure():
     """
 
 
+@app.route("/error")
+def error():
+    return "Error: Invalid color"
+
+
+@app.route("/style_insecure")
+def style_insecure():
+    color = request.args.get("color", "black")
+    return gset_text(color)
+
+
 @app.route("/style_secure")
 def style_secure():
     color = request.args.get("color", "black")
@@ -35,19 +39,7 @@ def style_secure():
     if color != upd_color:
         return redirect("/error")
 
-    return f"""
-        <html>
-            <head>
-                 <style> 
-                    h1 {{ color: {upd_color}; }} 
-                 </style>
-            </head>
-            <body>
-                <h1>GSET 2025</h1>
-                <p>The color is: {upd_color}</p>
-            </body>
-        </html>
-    """
+    return gset_text(upd_color)
 
 
 if __name__ == "__main__":

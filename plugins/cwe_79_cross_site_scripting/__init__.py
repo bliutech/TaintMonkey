@@ -29,13 +29,9 @@ import os, sys
 from urllib.parse import urlencode
 from taintmonkey.patch import original_function
 
-VERIFIERS = [
-    
-]
+VERIFIERS = []
 SANITIZERS = []
-SINKS = [
-
-]
+SINKS = []
 
 
 @pytest.fixture()
@@ -65,7 +61,7 @@ def taintmonkey():
         tainted_name = TaintedStr(name)
         command = TaintedStr(original_function(name))
         if not tainted_name.is_tainted():
-                command.sanitize()
+            command.sanitize()
         return command
 
     @tm.patch.function(
@@ -84,7 +80,7 @@ def taintmonkey():
         tainted_name = TaintedStr(name)
         command = TaintedStr(original_function(name))
         if not tainted_name.is_tainted():
-                command.sanitize()
+            command.sanitize()
         return command
 
     @tm.patch.function(
@@ -94,18 +90,62 @@ def taintmonkey():
         tainted_name = TaintedStr(name)
         command = TaintedStr(original_function(name))
         if not tainted_name.is_tainted():
-                command.sanitize()
+            command.sanitize()
+        return command
+
+    @tm.patch.function(
+        "dataset.cwe_79_cross_site_scripting.bleach_clean_css_format_string.app.gset_text"
+    )
+    def patched_open_file_command(name):
+        command = TaintedStr(original_function(name))
+        if not name.is_tainted():
+            command.sanitize()
+        return command
+
+    @tm.patch.function(
+        "dataset.cwe_79_cross_site_scripting.html_escape_format_string.app.say_hello"
+    )
+    def patched_open_file_command(name):
+        command = TaintedStr(original_function(name))
+        if not name.is_tainted():
+            command.sanitize()
+        return command
+
+    @tm.patch.function(
+        "dataset.cwe_79_cross_site_scripting.html_escape_normal_response.app.how_are_you"
+    )
+    def patched_open_file_command(name):
+        command = TaintedStr(original_function(name))
+        if not name.is_tainted():
+            command.sanitize()
+        return command
+
+    @tm.patch.function(
+        "dataset.cwe_79_cross_site_scripting.lxml_cleaner_post_response.app.welcome"
+    )
+    def patched_open_file_command(name):
+        tainted_name = TaintedStr(name)
+        command = TaintedStr(original_function(name))
+        if not tainted_name.is_tainted():
+            command.sanitize()
+        return command
+
+    @tm.patch.function(
+        "dataset.cwe_79_cross_site_scripting.markupsafe_escape_table_format_String.app.table"
+    )
+    def patched_open_file_command(name):
+        command = TaintedStr(original_function(name))
+        if not name.is_tainted():
+            command.sanitize()
         return command
 
     return tm
 
 
-
-
-
-
 def test_fuzz_html_escape_custom_check_response(taintmonkey):
-    from dataset.cwe_79_cross_site_scripting.html_escape_custom_check_response.app import app
+    from dataset.cwe_79_cross_site_scripting.html_escape_custom_check_response.app import (
+        app,
+    )
 
     taintmonkey.set_app(app)
 
@@ -115,13 +155,16 @@ def test_fuzz_html_escape_custom_check_response(taintmonkey):
 
 
 def test_fuzz_html_sanitizer_sanitize_template(taintmonkey):
-    from dataset.cwe_79_cross_site_scripting.html_sanitizer_sanitize_template.app import app
+    from dataset.cwe_79_cross_site_scripting.html_sanitizer_sanitize_template.app import (
+        app,
+    )
 
     taintmonkey.set_app(app)
 
     with taintmonkey.get_fuzzer().get_context() as (client, get_input):
         for data in get_input():
             client.get(f"/secure?{urlencode({'name': data})}")
+
 
 def test_fuzz_bleach_clean_response(taintmonkey):
     from dataset.cwe_79_cross_site_scripting.bleach_clean_response.app import app
@@ -132,6 +175,7 @@ def test_fuzz_bleach_clean_response(taintmonkey):
         for data in get_input():
             client.get(f"/secure?{urlencode({'name': data})}")
 
+
 def test_fuzz_lxml_cleaner_response(taintmonkey):
     from dataset.cwe_79_cross_site_scripting.lxml_cleaner_response.app import app
 
@@ -140,6 +184,7 @@ def test_fuzz_lxml_cleaner_response(taintmonkey):
     with taintmonkey.get_fuzzer().get_context() as (client, get_input):
         for data in get_input():
             client.get(f"/grade_secure?{urlencode({'score': data})}")
+
 
 def test_fuzz_markupsafe_escape_response(taintmonkey):
     from dataset.cwe_79_cross_site_scripting.markupsafe_escape_response.app import app
@@ -150,6 +195,59 @@ def test_fuzz_markupsafe_escape_response(taintmonkey):
         for data in get_input():
             client.get(f"/secure?{urlencode({'name': data})}")
 
+
+def test_fuzz_bleach_clean_css_format_string(taintmonkey):
+    from dataset.cwe_79_cross_site_scripting.bleach_clean_css_format_string.app import (
+        app,
+    )
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/style_secure?{urlencode({'color': data})}")
+
+
+def test_fuzz_html_escape_format_string(taintmonkey):
+    from dataset.cwe_79_cross_site_scripting.html_escape_format_string.app import app
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/submit_secure?{urlencode({'username': data})}")
+
+
+def test_fuzz_html_escape_normal_response(taintmonkey):
+    from dataset.cwe_79_cross_site_scripting.html_escape_normal_response.app import app
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure_cookie?{urlencode({'username': data})}")
+
+
+def test_fuzz_lxml_cleaner_post_response(taintmonkey):
+    from dataset.cwe_79_cross_site_scripting.lxml_cleaner_post_response.app import app
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.post("/secure_welcome", data={"username": data})
+
+
+def test_fuzz_markupsafe_escape_table_format_String(taintmonkey):
+    from dataset.cwe_79_cross_site_scripting.markupsafe_escape_table_format_String.app import (
+        app,
+    )
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure_table?{urlencode({'name': data})}")
 
 
 if __name__ == "__main__":

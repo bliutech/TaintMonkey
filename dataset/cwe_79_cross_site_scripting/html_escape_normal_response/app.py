@@ -11,19 +11,23 @@ def set_cookie():
     return resp
 
 
+def how_are_you(username):
+    return f"How are you, {username}?"
+
+
 # <script>alert(document.cookie)</script>
 # xss attack ^
 @app.route("/insecure_cookie")
 def insecure_cookie():
     username = request.args.get("username", "")
-    return f"How are you, {username}?"
+    return how_are_you(username)
 
 
 @app.route("/secure_cookie")
 def secure_cookie():
     username = request.args.get("username", "")
     username = escape(username)
-    return f"How are you, {username}?"
+    return how_are_you(username)
 
 
 if __name__ == "__main__":
