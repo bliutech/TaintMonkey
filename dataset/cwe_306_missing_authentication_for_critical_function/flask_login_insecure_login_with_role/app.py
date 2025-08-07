@@ -38,19 +38,9 @@ class User(UserMixin):
 @login_manager.user_loader
 def load_user(user_id):
     user_data = users.get(user_id)
-    if user_data:
-        return User(user_id, user_data["role"])
-    return None
-
-
-# Source
-def get_username(this_request):
-    return this_request.form.get("username")
-
-
-# Source
-def get_role(this_request):
-    return this_request.form.get("role")
+    if user_data is None:
+        return None
+    return User(user_id, user_data["role"])
 
 
 @app.get("/login")
@@ -75,18 +65,20 @@ def insecure_login_get():
 
 @app.post("/login")
 def insecure_login_post():
-    username = get_username(request)
+    username = request.form.get("username")
     if username is None:
         return "This should not happen - no username"
-    role = get_role(request)
+
+    role = request.form.get("role")
     if role is None:
         return "This should not happen - no role"
+
     password = request.form.get("password")
     if password is None:
         return "This should not happen - no password"
 
     user = User(username, role)  # Sink
-    login_user(user)  # Sink? This is where tainted objects could be helpful
+    login_user(user)
 
     return f"Welcome, {username}!"
 
@@ -100,7 +92,9 @@ def logout():
 @app.get("/current_user")
 @login_required
 def show_current_user():
-    return f"Currently {current_user.get_username()}"
+    return (
+        f"Currently {current_user.get_username()} with role {current_user.get_role()}"
+    )
 
 
 @app.get("/admin")

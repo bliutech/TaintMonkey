@@ -34,11 +34,6 @@ def load_user(user_id):
     return None
 
 
-# Source
-def get_username(this_request):
-    return this_request.form.get("username")
-
-
 @app.get("/login")
 def insecure_login_get():
     return """
@@ -60,15 +55,16 @@ def insecure_login_get():
 
 @app.post("/login")
 def insecure_login_post():
-    username = get_username(request)
+    username = request.form.get("username")
     if username is None:
         return "This should not happen - no username"
+
     password = request.form.get("password")
     if password is None:
         return "This should not happen - no password"
 
     user = User(username)  # Sink
-    login_user(user)  # Sink? This is where tainted objects could be helpful
+    login_user(user)
 
     return f"Welcome, {username}!"
 
