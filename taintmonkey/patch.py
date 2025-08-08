@@ -86,7 +86,7 @@ class PatchAssist:
         path = [x for x in filter(lambda xi: xi, module_name.split("."))]
 
         if depth >= len(path):
-            raise PatchException(f"Module couldn't be found in: {module_name}")
+            raise PatchException(f"No module named '{module_name}'")
         elif 0 < depth < len(path):
             module = ".".join(path[: depth * -1])
         else:

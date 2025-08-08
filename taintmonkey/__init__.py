@@ -13,12 +13,11 @@ from taintmonkey.taint import TaintedStr
 
 
 # Set patch_function
-patch_function = taintmonkey.patch.patch_function
+patch_function = MonkeyPatch.function
 
 
 # Set original function
-original_function = taintmonkey.patch.original_function
-
+original_function = MonkeyPatch.original_function
 
 # Monkey patch function that calls after every unit test so that it forces the deleting of TaintMonkey objects
 import _pytest.python
@@ -109,7 +108,7 @@ class TaintMonkey:
         if sanitizer not in self._sanitizers:
             self._sanitizers.append(sanitizer)
 
-        @TaintMonkey.patch.function(sanitizer)
+        @patch_function(sanitizer)
         def patched_sanitizer(*args, **kwargs):
             # Call the original sanitizer function
             return TaintedStr(original_function(*args, **kwargs)).sanitize()
@@ -122,7 +121,7 @@ class TaintMonkey:
         if verifier not in self._verifiers:
             self._verifiers.append(verifier)
 
-        @TaintMonkey.patch.function(verifier)
+        @patch_function(verifier)
         def patched_verifier(*args, **kwargs):
             # Check each arg to see if it is a TaintedStr
             for arg in args:
@@ -147,7 +146,7 @@ class TaintMonkey:
         if sink not in self._sinks:
             self._sinks.append(sink)
 
-        @TaintMonkey.patch.function(sink)
+        @patch_function(sink)
         def patched_sink(*args, **kwargs):
             # Check each arg to see if it is a TaintedStr
             for arg in args:
