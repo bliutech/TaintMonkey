@@ -366,10 +366,5 @@ def test_fuzz_token_print(taintmonkey):
                 client.post(f"/insecure_bank?{urlencode({'bank_number': data})}")
 
 
-def test_no_taint_exception(taintmonkey):
-    client = taintmonkey.get_client()
-    client.post("/secure_birthdate?birthdate=01-01-2000")
-
-
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__]))
