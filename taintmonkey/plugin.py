@@ -25,7 +25,7 @@ def set_code_context(new_code_context: int):
     if isinstance(new_code_context, int):
         global code_context
 
-        code_context = 10
+        code_context = new_code_context
 
 
 @pytest.hookimpl(hookwrapper=True)
