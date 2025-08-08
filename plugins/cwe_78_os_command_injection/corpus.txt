@@ -7,3 +7,4 @@ $(ls) # $()
 ls; id
 > /var/www/html/out.txt
 < /etc/passwd
+test
