@@ -17,14 +17,14 @@ import pytest
 from taintmonkey import TaintException, TaintMonkey
 from taintmonkey.fuzzer import DictionaryFuzzer
 from taintmonkey.taint import TaintedStr
-from taintmonkey.patch import patch_function, original_function
+from taintmonkey.patch import original_function
 
-import os, sys
+import sys
 from urllib.parse import urlencode
 
 
-"""
-List of Sanitizers:
+VERIFIERS = []
+SANITIZERS = [
     "dataset.cwe_200_sensitive_data_exposure.generalize_log.app.generalize",
     "dataset.cwe_200_sensitive_data_exposure.generalize_print.app.generalize",
     "dataset.cwe_200_sensitive_data_exposure.hash_log.app.hash_ssn",
@@ -34,11 +34,9 @@ List of Sanitizers:
     "dataset.cwe_200_sensitive_data_exposure.psudonymization_log.app.psudo",
     "dataset.cwe_200_sensitive_data_exposure.psudonymization_print.app.psudo",
     "dataset.cwe_200_sensitive_data_exposure.token_log.app.tokenize",
-    "dataset.cwe_200_sensitive_data_exposure.token_print.app.tokenize"
-"""
-
-"""
-List of sinks:
+    "dataset.cwe_200_sensitive_data_exposure.token_print.app.tokenize",
+]
+SINKS = [
     "dataset.cwe_200_sensitive_data_exposure.generalize_log.app.log_info",
     "dataset.cwe_200_sensitive_data_exposure.generalize_print.app.print_info",
     "dataset.cwe_200_sensitive_data_exposure.hash_log.app.log_info",
@@ -48,12 +46,8 @@ List of sinks:
     "dataset.cwe_200_sensitive_data_exposure.psudonymization_log.app.log_info",
     "dataset.cwe_200_sensitive_data_exposure.psudonymization_print.app.print_info",
     "dataset.cwe_200_sensitive_data_exposure.token_log.app.log_info",
-    "dataset.cwe_200_sensitive_data_exposure.token_print.app.print_info"
-"""
-
-VERIFIERS = []
-SANITIZERS = []
-SINKS = []
+    "dataset.cwe_200_sensitive_data_exposure.token_print.app.print_info",
+]
 
 
 @pytest.fixture()
@@ -64,12 +58,6 @@ def taintmonkey():
 
     fuzzer = DictionaryFuzzer(app, "plugins/cwe_200_sensitive_data_exposure/corpus.txt")
     tm.set_fuzzer(fuzzer)
-
-    # Manually Patched Sanitizer - TODO(CKC): Figure out why it doesn't work
-    # @tm.patch.function("dataset.cwe_200_sensitive_data_exposure.generalize_log.app.generalize")
-    # def new_generalize(var):
-    #     var.sanitize()
-    #     return original_function(var)
 
     # Manually Patched Sources
     @tm.patch.function(
@@ -125,81 +113,6 @@ def taintmonkey():
     )
     def new_get_info(var):
         return TaintedStr(original_function(var))
-
-    # Manually Patched Sinks (will remove once TaintMonkey function is fixed)
-    @tm.patch.function(
-        "dataset.cwe_200_sensitive_data_exposure.generalize_log.app.log_info"
-    )
-    def new_log_info(var):
-        if var.is_tainted():
-            raise TaintException
-        return original_function(var)
-
-    @tm.patch.function(
-        "dataset.cwe_200_sensitive_data_exposure.generalize_print.app.print_info"
-    )
-    def new_log_info(var):
-        if var.is_tainted():
-            raise TaintException
-        return original_function(var)
-
-    @tm.patch.function("dataset.cwe_200_sensitive_data_exposure.hash_log.app.log_info")
-    def new_log_info(var):
-        if var.is_tainted():
-            raise TaintException
-        return original_function(var)
-
-    @tm.patch.function(
-        "dataset.cwe_200_sensitive_data_exposure.hash_print.app.print_info"
-    )
-    def new_log_info(var):
-        if var.is_tainted():
-            raise TaintException
-        return original_function(var)
-
-    @tm.patch.function("dataset.cwe_200_sensitive_data_exposure.mask_log.app.log_info")
-    def new_log_info(var):
-        if var.is_tainted():
-            raise TaintException
-        return original_function(var)
-
-    @tm.patch.function(
-        "dataset.cwe_200_sensitive_data_exposure.mask_print.app.print_info"
-    )
-    def new_log_info(var):
-        if var.is_tainted():
-            raise TaintException
-        return original_function(var)
-
-    @tm.patch.function(
-        "dataset.cwe_200_sensitive_data_exposure.psudonymization_log.app.log_info"
-    )
-    def new_log_info(var):
-        if var.is_tainted():
-            raise TaintException
-        return original_function(var)
-
-    @tm.patch.function(
-        "dataset.cwe_200_sensitive_data_exposure.psudonymization_print.app.print_info"
-    )
-    def new_log_info(var):
-        if var.is_tainted():
-            raise TaintException
-        return original_function(var)
-
-    @tm.patch.function("dataset.cwe_200_sensitive_data_exposure.token_log.app.log_info")
-    def new_log_info(var):
-        if var.is_tainted():
-            raise TaintException
-        return original_function(var)
-
-    @tm.patch.function(
-        "dataset.cwe_200_sensitive_data_exposure.token_print.app.print_info"
-    )
-    def new_log_info(var):
-        if var.is_tainted():
-            raise TaintException
-        return original_function(var)
 
     return tm
 
@@ -453,10 +366,9 @@ def test_fuzz_token_print(taintmonkey):
                 client.post(f"/insecure_bank?{urlencode({'bank_number': data})}")
 
 
-# Sanitizer patching doesn't work yet - TODO(CKC): Figure out why it doesn't work
-# def test_no_taint_exception(taintmonkey):
-#     client = taintmonkey.get_client()
-#     client.post("/secure_birthdate?birthdate=01-01-2000")
+def test_no_taint_exception(taintmonkey):
+    client = taintmonkey.get_client()
+    client.post("/secure_birthdate?birthdate=01-01-2000")
 
 
 if __name__ == "__main__":
