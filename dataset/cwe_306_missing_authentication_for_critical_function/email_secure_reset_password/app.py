@@ -19,12 +19,7 @@ users = {
 }
 
 
-# Source
-def get_email(this_request):
-    return this_request.form.get("email")
-
-
-# Sanitizer
+# Verifier
 def is_correct_email(email, user_given, user_db):
     user_info = user_db.get(user_given)
     if user_info is None:
@@ -47,7 +42,7 @@ def send_simple_email(recipient, subject, body):
             subject=subject, sender=app.config["MAIL_USERNAME"], recipients=[recipient]
         )
         msg.body = body
-        mail.send(msg)  # Sink? May be more robust to make this a sink
+        mail.send(msg)
         print(f"Email sent successfully to {recipient}")
     except Exception as e:
         print(f"Failed to send email: {e}")
@@ -67,18 +62,20 @@ def insecure_reset_passwrd_get():
 
 @app.post("/reset_password")
 def insecure_reset_passwrd_post():
-    username = request.form.get("username")  # Also checks if user exists
+    username = request.form.get("username")
     if username is None:
         return "This should not happen - no username"
-    email = get_email(request)  # Source
+
+    email = request.form.get("email")
     if email is None:
         return "This should not happen - no email"
 
-    # Sanitize
+    # Verify
     if not is_correct_email(email, username, users):
         return "Username and/or email or incorrect"
 
-    send_simple_email(email, "Password Recovery", "IMAGINE RECOVERY CODE HERE")  # Sink?
+    # Sink
+    send_simple_email(email, "Password Recovery", "IMAGINE RECOVERY CODE HERE")
 
     return f"Email sent for {username}!"
 

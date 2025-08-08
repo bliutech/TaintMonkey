@@ -12,8 +12,12 @@ users = {
 
 @app.post("/login")
 def login_send():
-    username = request.form["username"]
-    password = request.form["password"]
+    username = request.form.get("username")
+
+    password = request.form.get("password")
+
+    if username is None or password is None:
+        return "username or password not supplied in post form"
 
     db_password = users.get(username)
     if db_password and db_password == password:
@@ -22,6 +26,7 @@ def login_send():
         return f"""
             Welcome, {username}!
         """
+
     return """
         Invalid credentials
     """
@@ -49,14 +54,11 @@ def login_show():
     """
 
 
-# Source
-def get_new_password(this_request):
-    return this_request.form.get("new_password")
+# Verifier
+def password_is_correct(username, old_password, new_password):
+    db_password = users.get(username)
 
-
-# Sanitizer
-def password_is_correct(old_password, db_password):
-    return old_password == db_password
+    return db_password == old_password and old_password != new_password
 
 
 # Sink
@@ -82,20 +84,20 @@ def secure_reset_password_send():
     username = request.form.get("username")
     if username is None:
         return "This should not happen - no username"
+
     old_password = request.form.get("old_password")
     if old_password is None:
         return "This should not happen - no old password"
-    new_password = get_new_password(request)
+
+    new_password = request.form.get("new_password")
     if new_password is None:
         return "This should not happen - no new password"
 
-    db_password = users.get(username)
-    if db_password is None:
-        "No user in database"
+    # Verify
+    if not password_is_correct(username, old_password, new_password):
+        return "old password does not match database password or is identical to the new password"
 
-    if not password_is_correct(old_password, db_password):
-        return "Incorrect password - old password does not match database password"
-
+    # Sink
     set_new_password(new_password, username, users)
     return f"""
         {username}, your password is reset!
@@ -122,7 +124,8 @@ def insecure_reset_password_send():
     username = request.form.get("username")
     if username is None:
         return "This should not happen - no username"
-    new_password = get_new_password(request)
+
+    new_password = request.form.get("new_password")
     if new_password is None:
         return "THis should not happen - no new password"
 
@@ -130,6 +133,7 @@ def insecure_reset_password_send():
     if db_password is None:
         "No user in database"
 
+    # Sink
     set_new_password(new_password, username, users)
     return f"""
         {username}, your password is reset!
@@ -137,11 +141,6 @@ def insecure_reset_password_send():
             <button type="submit">Login</button>
         </form>
     """
-
-
-# Monkey patch?
-def user_login_info_correct(username, password, database):
-    return username in database and username[username] == password
 
 
 @app.post("/logout")

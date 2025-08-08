@@ -34,21 +34,11 @@ def load_user(user_id):
     return None
 
 
-# Source
-def get_username(this_request):
-    return this_request.form.get("username")
-
-
-# Sanitizer
+# Verifier
 def credentials_valid(this_username, this_password, user_db):
     db_password = user_db.get(this_username)  # Gets password and checks if user exists
-    if db_password is None:
-        return False
 
-    if this_password != db_password:  # Check if passwords match
-        return False
-
-    return True
+    return db_password == this_password
 
 
 @app.get("/login")
@@ -72,18 +62,20 @@ def secure_login_get():
 
 @app.post("/login")
 def secure_login_post():
-    username = get_username(request)
+    username = request.form.get("username")
     if username is None:
         return "This should not happen - no username"
+
     password = request.form.get("password")
     if password is None:
         return "This should not happen - no password"
 
+    # Verify
     if not credentials_valid(username, password, users):
         return "Invalid credentials"
 
     user = User(username)  # Sink
-    login_user(user)  # Sink? This is where tainted objects could be helpful
+    login_user(user)
 
     return f"Welcome, {username}!"
 
