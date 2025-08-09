@@ -15,6 +15,36 @@ ALLOWED_OPERATIONS = {
 }
 
 
+def execute_secure(operation, values):
+    if operation not in ALLOWED_OPERATIONS:
+        return (
+            None,
+            f"Invalid operation. Allowed operations: {', '.join(ALLOWED_OPERATIONS.keys())}",
+            400,
+        )
+
+    if not isinstance(values, list):
+        return None, "Missing or invalid 'values' field", 400
+
+    for val in values:
+        if not isinstance(val, (int, float)):
+            return None, "All values must be numbers", 400
+
+    try:
+        if operation == "square_root":
+            if len(values) != 1:
+                return None, "Square root operation requires exactly 1 value", 400
+            result = ALLOWED_OPERATIONS[operation](values[0])
+        else:
+            if len(values) != 2:
+                return None, f"Operation requires exactly 2 values", 400
+            result = ALLOWED_OPERATIONS[operation](values[0], values[1])
+
+        return result, None, None
+    except Exception as e:
+        return None, str(e), 500
+
+
 @app.route("/execute", methods=["POST"])
 def execute_handler():
     try:
@@ -27,42 +57,16 @@ def execute_handler():
             return jsonify({"status": "error", "error": "Missing operation field"}), 400
 
         operation = data["operation"]
-        if operation not in ALLOWED_OPERATIONS:
-            return jsonify(
-                {
-                    "status": "error",
-                    "error": f"Invalid operation. Allowed operations: {', '.join(ALLOWED_OPERATIONS.keys())}",
-                }
-            ), 400
 
-        if "values" not in data or not isinstance(data["values"], list):
-            return jsonify(
-                {"status": "error", "error": "Missing or invalid 'values' field"}
-            ), 400
+        if "values" not in data:
+            return jsonify({"status": "error", "error": "Missing 'values' field"}), 400
 
         values = data["values"]
 
-        for val in values:
-            if not isinstance(val, (int, float)):
-                return jsonify(
-                    {"status": "error", "error": "All values must be numbers"}
-                ), 400
+        result, error, status_code = execute_secure(operation, values)
 
-        if operation == "square_root":
-            if len(values) != 1:
-                return jsonify(
-                    {
-                        "status": "error",
-                        "error": "Square root operation requires exactly 1 value",
-                    }
-                ), 400
-            result = ALLOWED_OPERATIONS[operation](values[0])
-        else:
-            if len(values) != 2:
-                return jsonify(
-                    {"status": "error", "error": f"operation requires exactly 2 values"}
-                ), 400
-            result = ALLOWED_OPERATIONS[operation](values[0], values[1])
+        if error:
+            return jsonify({"status": "error", "error": error}), status_code
 
         return jsonify(
             {
