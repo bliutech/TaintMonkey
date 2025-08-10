@@ -1,9 +1,15 @@
 # https://lxml.de/api/lxml.html.clean.Cleaner-class.html
 
+
 from flask import Flask, request
 from lxml.html.clean import Cleaner
 
+
 app = Flask(__name__)
+
+
+def welcome(name):
+    return f"Welcome, {name}!"
 
 
 # test: curl -X POST -d "username=<script>alert('XSS')</script>"
@@ -11,7 +17,7 @@ app = Flask(__name__)
 def insecure_welcome():
     if request.method == "POST":
         username = request.form.get("username", "")
-        return f"Welcome, {username}!"
+        return welcome(username)
     return "Welcome!"
 
 
@@ -21,7 +27,7 @@ def secure_welcome():
         username = request.form.get("username", "")
         cleaner = Cleaner(scripts=True, javascript=True, style=True)
         cleaned_username = cleaner.clean_html(username)
-        return f"Welcome, {cleaned_username}!"
+        return welcome(cleaned_username)
     return "Welcome!"
 
 
