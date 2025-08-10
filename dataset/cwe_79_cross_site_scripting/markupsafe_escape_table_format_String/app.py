@@ -2,49 +2,43 @@
 from markupsafe import escape
 from flask import Flask, request
 
+
 app = Flask(__name__)
 
 
-def suspicious_input(name, age):
+def suspicious_input(name):
     upd_name = escape(name)
-    upd_age = escape(age)
 
-    if name != upd_name or age != upd_age:
-        return True
-    return False
+    return name != upd_name
 
 
-def table(name, age):
+def table(name):
     return f"""
-    <table border="1">
-        <tr>
-            <th>Name</th>
-            <th>Age</th>
-        </tr>
-        <tr>
-            <td>{name}</td>
-            <td>{age}</td>
-        </tr>
-    </table>
-    """
+   <table border="1">
+       <tr>
+           <th>Name</th>
+       </tr>
+       <tr>
+           <td>{name}</td>
+       </tr>
+   </table>
+   """
 
 
 @app.route("/insecure_table")
 def insecure_table():
     name = request.args.get("name", "")
-    age = request.args.get("age", "")
-    return table(name, age)
+    return table(name)
 
 
 @app.route("/secure_table")
 def secure_table():
     name = request.args.get("name", "")
-    age = request.args.get("age", "")
 
-    if suspicious_input(name, age):
+    if suspicious_input(name):
         return "Invalid input detected", 400
 
-    return table(name, age)
+    return table(name)
 
 
 if __name__ == "__main__":
