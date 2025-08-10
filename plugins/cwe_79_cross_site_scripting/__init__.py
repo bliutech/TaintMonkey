@@ -24,7 +24,6 @@ PYTHONPATH=. pytest -vs plugins/cwe_79_cross_site_scripting/__init__.py
 ```
 """
 
-
 import pytest
 
 
@@ -57,169 +56,136 @@ SINKS = [
 
 @pytest.fixture()
 def taintmonkey():
-   from dataset.cwe_79_cross_site_scripting.html_escape_custom_check_response.app import app
+    from dataset.cwe_79_cross_site_scripting.html_escape_custom_check_response.app import (
+        app,
+    )
 
-   tm = TaintMonkey(app, verifiers=VERIFIERS, sanitizers=SANITIZERS, sinks=SINKS)
+    tm = TaintMonkey(app, verifiers=VERIFIERS, sanitizers=SANITIZERS, sinks=SINKS)
 
-   fuzzer = DictionaryFuzzer(app, "plugins/cwe_79_cross_site_scripting/corpus.txt")
-   tm.set_fuzzer(fuzzer)
+    fuzzer = DictionaryFuzzer(app, "plugins/cwe_79_cross_site_scripting/corpus.txt")
+    tm.set_fuzzer(fuzzer)
 
-   return tm
-
+    return tm
 
 
 # test and fuzzer
 def test_fuzz_html_escape_custom_check_response(taintmonkey):
-   from dataset.cwe_79_cross_site_scripting.html_escape_custom_check_response.app import (
-       app,
-   )
+    from dataset.cwe_79_cross_site_scripting.html_escape_custom_check_response.app import (
+        app,
+    )
 
-   taintmonkey.set_app(app)
+    taintmonkey.set_app(app)
 
-   with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-       for data in get_input():
-        with pytest.raises(TaintException):
-           client.get(f"/insecure-xss?{urlencode({'name': data})}")
-
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/insecure-xss?{urlencode({'name': data})}")
 
 
 def test_fuzz_html_sanitizer_sanitize_template(taintmonkey):
-   from dataset.cwe_79_cross_site_scripting.html_sanitizer_sanitize_template.app import (
-       app,
-   )
+    from dataset.cwe_79_cross_site_scripting.html_sanitizer_sanitize_template.app import (
+        app,
+    )
 
+    taintmonkey.set_app(app)
 
-   taintmonkey.set_app(app)
-
-
-   with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-       for data in get_input():
-        with pytest.raises(TaintException):
-           client.get(f"/insecure?{urlencode({'name': data})}")
-
-
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/insecure?{urlencode({'name': data})}")
 
 
 def test_fuzz_bleach_clean_response(taintmonkey):
-   from dataset.cwe_79_cross_site_scripting.bleach_clean_response.app import app
+    from dataset.cwe_79_cross_site_scripting.bleach_clean_response.app import app
 
+    taintmonkey.set_app(app)
 
-   taintmonkey.set_app(app)
-
-
-   with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-       for data in get_input():
-        with pytest.raises(TaintException):
-           client.get(f"/insecure?{urlencode({'name': data})}")
-
-
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/insecure?{urlencode({'name': data})}")
 
 
 def test_fuzz_lxml_cleaner_response(taintmonkey):
-   from dataset.cwe_79_cross_site_scripting.lxml_cleaner_response.app import app
+    from dataset.cwe_79_cross_site_scripting.lxml_cleaner_response.app import app
 
+    taintmonkey.set_app(app)
 
-   taintmonkey.set_app(app)
-
-
-   with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-       for data in get_input():
-        with pytest.raises(TaintException):
-           client.get(f"/grade_insecure?{urlencode({'score': data})}")
-
-
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/grade_insecure?{urlencode({'score': data})}")
 
 
 def test_fuzz_markupsafe_escape_response(taintmonkey):
-   from dataset.cwe_79_cross_site_scripting.markupsafe_escape_response.app import app
+    from dataset.cwe_79_cross_site_scripting.markupsafe_escape_response.app import app
 
+    taintmonkey.set_app(app)
 
-   taintmonkey.set_app(app)
-
-
-   with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-       for data in get_input():
-        with pytest.raises(TaintException):
-           client.get(f"/insecure?{urlencode({'name': data})}")
-
-
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/insecure?{urlencode({'name': data})}")
 
 
 def test_fuzz_bleach_clean_css_format_string(taintmonkey):
-   from dataset.cwe_79_cross_site_scripting.bleach_clean_css_format_string.app import (
-       app,
-   )
+    from dataset.cwe_79_cross_site_scripting.bleach_clean_css_format_string.app import (
+        app,
+    )
 
+    taintmonkey.set_app(app)
 
-   taintmonkey.set_app(app)
-
-
-   with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-       for data in get_input():
-        with pytest.raises(TaintException):
-           client.get(f"/style_insecure?{urlencode({'color': data})}")
-
-
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/style_insecure?{urlencode({'color': data})}")
 
 
 def test_fuzz_html_escape_format_string(taintmonkey):
-   from dataset.cwe_79_cross_site_scripting.html_escape_format_string.app import app
+    from dataset.cwe_79_cross_site_scripting.html_escape_format_string.app import app
 
+    taintmonkey.set_app(app)
 
-   taintmonkey.set_app(app)
-
-
-   with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-       for data in get_input():
-        with pytest.raises(TaintException):
-           client.post("/submit_insecure", data={"username": data})
-
-
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.post("/submit_insecure", data={"username": data})
 
 
 def test_fuzz_html_escape_normal_response(taintmonkey):
-   from dataset.cwe_79_cross_site_scripting.html_escape_normal_response.app import app
+    from dataset.cwe_79_cross_site_scripting.html_escape_normal_response.app import app
 
+    taintmonkey.set_app(app)
 
-   taintmonkey.set_app(app)
-
-
-   with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-       for data in get_input():
-        with pytest.raises(TaintException):
-           client.get(f"/insecure_cookie?{urlencode({'username': data})}")
-
-
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/insecure_cookie?{urlencode({'username': data})}")
 
 
 def test_fuzz_lxml_cleaner_post_response(taintmonkey):
-   from dataset.cwe_79_cross_site_scripting.lxml_cleaner_post_response.app import app
+    from dataset.cwe_79_cross_site_scripting.lxml_cleaner_post_response.app import app
 
+    taintmonkey.set_app(app)
 
-   taintmonkey.set_app(app)
-
-
-   with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-       for data in get_input():
-        with pytest.raises(TaintException):
-           client.post("/insecure_welcome", data={"username": data})
-
-
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.post("/insecure_welcome", data={"username": data})
 
 
 def test_fuzz_markupsafe_escape_table_format_String(taintmonkey):
-   from dataset.cwe_79_cross_site_scripting.markupsafe_escape_table_format_String.app import app
+    from dataset.cwe_79_cross_site_scripting.markupsafe_escape_table_format_String.app import (
+        app,
+    )
 
-   taintmonkey.set_app(app)
+    taintmonkey.set_app(app)
 
-
-   with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-       for data in get_input():
-        with pytest.raises(TaintException):
-           client.get(f"/insecure_table?{urlencode({'name': data})}")
-
-
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/insecure_table?{urlencode({'name': data})}")
 
 
 if __name__ == "__main__":
-   sys.exit(pytest.main([__file__]))
+    sys.exit(pytest.main([__file__]))
