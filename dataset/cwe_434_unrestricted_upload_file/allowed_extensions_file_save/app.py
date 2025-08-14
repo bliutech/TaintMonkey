@@ -12,7 +12,9 @@ os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 
 def get_filename(file):
-    return file.filename
+    from taintmonkey.taint import TaintedStr
+
+    return TaintedStr(file.filename)
 
 
 def safe_wrapper(file, filename):
@@ -37,14 +39,10 @@ def insecure_upload():
         return "No selected file", 400
 
     filename = get_filename(file)
-    print(f"{filename}")
 
-    if is_safe_filename(filename):
-        safe_wrapper(file, filename)
-        print("file uploaded successfully")
-        return f"File uploaded successfully"
-    else:
-        return "Only image files are allowed", 400
+    safe_wrapper(file, filename)
+    print("file uploaded successfully")
+    return f"File uploaded successfully"
 
 
 @app.route("/secure/upload", methods=["POST"])

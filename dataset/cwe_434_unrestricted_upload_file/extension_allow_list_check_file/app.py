@@ -8,6 +8,16 @@ app.config["UPLOAD_FOLDER"] = "uploads/"
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 
+def safe_wrapper(file, filename):
+    file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+
+
+def get_filename(file):
+    from taintmonkey.taint import TaintedStr
+
+    return TaintedStr(file.filename)
+
+
 @app.route("/insecure/upload", methods=["POST"])
 def insecure_upload():
     if "file" not in request.files:
@@ -18,22 +28,10 @@ def insecure_upload():
     if file.filename == "":
         return "No selected file", 400
 
-    filename = file.filename
+    filename = get_filename(file)
 
-    # can't block everything
-    blacklisted_extensions = ["php", "php3", "php4", "php5", "phtml"]
-
-    if "." in filename:
-        extension = filename.rsplit(".", 1)[1].lower()
-
-        if extension in blacklisted_extensions:
-            return f"File type not allowed", 400
-
-        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-        return redirect(url_for("uploaded_file", filename=filename))
-    else:
-        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-        return redirect(url_for("uploaded_file", filename=filename))
+    safe_wrapper(file, filename)
+    return redirect(url_for("uploaded_file", filename=filename))
 
 
 @app.route("/secure/upload", methods=["POST"])
@@ -46,7 +44,7 @@ def secure_upload():
     if file.filename == "":
         return "No selected file", 400
 
-    filename = file.filename
+    filename = get_filename(file)
 
     # only allows these types (safer types)
     allowed_extensions = {"jpg", "jpeg", "png", "gif", "txt", "pdf"}
@@ -86,7 +84,7 @@ def secure_upload():
         if not is_valid_image:
             return "File content does not match the extension", 400
 
-    file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+    safe_wrapper(file, filename)
     return redirect(url_for("uploaded_file", filename=filename))
 
 
