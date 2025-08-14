@@ -14,6 +14,16 @@ app.config["UPLOAD_FOLDER"] = "uploads/"
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 
+def file_save(file, filename):
+    file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+
+
+def get_filename(file):
+    from taintmonkey.taint import TaintedStr
+
+    return TaintedStr(file.filename)
+
+
 @app.route("/insecure/upload", methods=["POST"])
 def insecure_upload():
     if "file" not in request.files:
@@ -24,17 +34,10 @@ def insecure_upload():
     if file.filename == "":
         return "No selected file", 400
 
-    filename = file.filename
+    filename = get_filename(file)
 
-    if (
-        filename.endswith(".jpg")
-        or filename.endswith(".png")
-        or filename.endswith(".gif")
-    ):
-        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-        return redirect(url_for("uploaded_file", filename=filename))
-    else:
-        return "File type not allowed.", 400
+    file_save(file, filename)
+    return redirect(url_for("uploaded_file", filename=filename))
 
 
 @app.route("/secure/upload", methods=["POST"])
@@ -47,7 +50,7 @@ def secure_upload():
     if file.filename == "":
         return "No selected file", 400
 
-    filename = file.filename
+    filename = get_filename(file)
 
     allowed_extensions = {"jpg", "jpeg", "png", "gif"}
     if (
@@ -77,8 +80,8 @@ def secure_upload():
     if not is_valid_image:
         return "File content is not an allowed image types", 400
 
-    file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-    return redirect(url_for("uploaded_file", filename))
+    file_save(file, filename)
+    return redirect(url_for("uploaded_file", filename=filename))
 
 
 @app.route("/uploads/<filename>")

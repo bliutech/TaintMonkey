@@ -1,30 +1,40 @@
 import os
 from flask import Flask, request, send_from_directory, abort
 from werkzeug.utils import safe_join
+from taintmonkey.taint import TaintedStr
 
 app = Flask(__name__)
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
-@app.route("/insecure_upload")
-def insecure_upload():
-    filename = request.args.get("filename")
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
+def get_filename(file):
+    return TaintedStr(file.filename)
 
-    if not os.path.exists(file_path):
-        abort(404)
+
+def safe_wrapper(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
 
-@app.route("/secure_upload")
+@app.route("/insecure_upload", methods=["POST"])
+def insecure_upload():
+    if "file" not in request.files:
+        return "no file uploaded", 400
+
+    file = request.files["file"]
+    filename = get_filename(file)
+
+    return safe_wrapper(filename)
+
+
+@app.route("/secure_upload", methods=["POST"])
 def secure_upload():
     filename = request.args.get("filename")
 
     safe_path = safe_join(UPLOAD_FOLDER, filename)  # sanitizer
     if not safe_path or not os.path.isfile(safe_path):
         abort(404)
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    return safe_wrapper(filename)
 
 
 if __name__ == "__main__":

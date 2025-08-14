@@ -1,10 +1,19 @@
 import os
 from flask import Flask, request
 import magic
+from taintmonkey.taint import TaintedStr
 
 app = Flask(__name__)
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
+def safe_wrapper(uploaded_file, filepath):
+    uploaded_file.save(filepath)
+
+
+def get_filename(file):
+    return TaintedStr(file.filename)
 
 
 @app.post("/insecure_upload")
@@ -13,8 +22,11 @@ def insecure_upload():
     if not uploaded_file or uploaded_file.filename == "":
         return "No file uploaded", 400
 
-    filepath = os.path.join(UPLOAD_FOLDER, uploaded_file.filename)
-    uploaded_file.save(filepath)
+    filename = get_filename(uploaded_file)
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    filepath = TaintedStr(filepath)
+
+    safe_wrapper(uploaded_file, filepath)
     return f"Insecurely saved to {filepath}"
 
 
@@ -34,7 +46,7 @@ def secure_upload():
         return f"File type {mime_type} not allowed", 400
 
     filepath = os.path.join(UPLOAD_FOLDER, uploaded_file.filename)
-    uploaded_file.save(filepath)
+    safe_wrapper(uploaded_file, filepath)
     return f"Securely saved to {filepath}"
 
 
