@@ -3,8 +3,8 @@ TaintMonkey plugin for pytest.
 """
 
 import pygments
-from pygments.lexers import PythonLexer
-from pygments.formatters import TerminalFormatter
+from pygments.lexers.python import PythonLexer
+from pygments.formatters.terminal import TerminalFormatter
 
 import pytest
 
