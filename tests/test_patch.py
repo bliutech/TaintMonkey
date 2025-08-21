@@ -155,3 +155,22 @@ def test_monkey_patch():
     import random
 
     assert random.randint(1, 10) == EXPECTED_VALUE
+
+
+def test_original_function_repr():
+    import sys
+
+    del sys.modules["random"]
+    import random
+
+    # Save original repr before patching
+    orig_repr = repr(random.randint)
+
+    EXPECTED_VALUE = 999
+
+    @patch_function("random.randint")
+    def randint(a: int, b: int) -> int:
+        return EXPECTED_VALUE
+
+    # After patch, original_function should proxy to the original random.randint
+    assert repr(original_function) == orig_repr

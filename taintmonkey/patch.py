@@ -50,6 +50,9 @@ class ContextVarProxy:
         else:
             setattr(self._context_var.get(), name, value)
 
+    def __repr__(self):
+        return repr(self._context_var.get())
+
 
 class PatchAssist:
     """
