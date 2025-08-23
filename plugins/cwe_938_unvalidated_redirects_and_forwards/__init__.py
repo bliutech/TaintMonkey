@@ -16,93 +16,283 @@ PYTHONPATH=. python3 plugins/cwe_938_unvalidated_redirects_and_forwards/__init__
 """
 
 import pytest
-from taintmonkey import TaintException
-from taintmonkey.client import register_taint_client
+
+from taintmonkey import TaintException, TaintMonkey
 from taintmonkey.fuzzer import DictionaryFuzzer
 from taintmonkey.taint import TaintedStr
-from taintmonkey.patch import patch_function
-import flask, sys
+from taintmonkey.patch import original_function
 
+import sys
 from urllib.parse import urlencode
 
-SOURCES = ["get_url()"]
-SANITIZERS = ["check_allow_list"]
-SINKS = ["redirect_to"]
-
-import dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app
-
-
-old_redirect = dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.redirect_to
-
-
-@patch_function(
-    "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.redirect_to"
-)
-# Sink Patch
-def new_redirect(url: TaintedStr):
-    if url.is_tainted():
-        raise TaintException("potential vulnerability")
-    return old_redirect(url)
-
-
-old_get_url = dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.get_url
-
-
-@patch_function(
-    "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.get_url"
-)
-# Source Patch
-def new_get_url():
-    return TaintedStr(old_get_url())
+VERIFIERS = [
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.furl_allow_list_relative_paths.app.check_allow_path",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.furl_allow_list_urls.app.check_allow_list",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.furl_deny_list_urls.app.check_deny_list",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.requests_allow_list.app.check_allow_list",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_relative_paths.app.check_allow_path",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.check_allow_list",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_deny_list_urls.app.check_deny_list",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.yarl_allow_list_relative_paths.app.check_allow_path",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.yarl_allow_list_urls.app.check_allow_list",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.yarl_deny_list_urls.app.check_deny_list",
+]
+SANITIZERS = []
+SINKS = [
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.furl_allow_list_relative_paths.app.redirect_to",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.furl_allow_list_urls.app.redirect_to",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.furl_deny_list_urls.app.redirect_to",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.requests_allow_list.app.redirect_to",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_relative_paths.app.redirect_to",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.redirect_to",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_deny_list_urls.app.redirect_to",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.yarl_allow_list_relative_paths.app.redirect_to",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.yarl_allow_list_urls.app.redirect_to",
+    "dataset.cwe_938_unvalidated_redirects_and_forwards.yarl_deny_list_urls.app.redirect_to",
+]
 
 
-old_check_allow_list = dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.check_allow_list
-
-
-@patch_function(
-    "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.check_allow_list"
-)
-# Santizer Patch
-def new_check_allow_list(url: TaintedStr):
-    url.sanitize()
-    return old_check_allow_list
-
-
-# https://flask.palletsprojects.com/en/stable/testing/
 @pytest.fixture()
-def app():
+def taintmonkey():
+    from dataset.cwe_938_unvalidated_redirects_and_forwards.furl_allow_list_relative_paths.app import (
+        app,
+    )
+
+    tm = TaintMonkey(app, verifiers=VERIFIERS, sanitizers=SANITIZERS, sinks=SINKS)
+
+    fuzzer = DictionaryFuzzer(
+        app, "plugins/cwe_938_unvalidated_redirects_and_forwards/corpus.txt"
+    )
+    tm.set_fuzzer(fuzzer)
+
+    # Manually Patched Sources
+    @tm.patch.function(
+        "dataset.cwe_938_unvalidated_redirects_and_forwards.furl_allow_list_relative_paths.app.get_path"
+    )
+    def new_get_path():
+        return TaintedStr(original_function())
+
+    @tm.patch.function(
+        "dataset.cwe_938_unvalidated_redirects_and_forwards.furl_allow_list_urls.app.get_url"
+    )
+    def new_get_path():
+        return TaintedStr(original_function())
+
+    @tm.patch.function(
+        "dataset.cwe_938_unvalidated_redirects_and_forwards.furl_deny_list_urls.app.get_url"
+    )
+    def new_get_path():
+        return TaintedStr(original_function())
+
+    @tm.patch.function(
+        "dataset.cwe_938_unvalidated_redirects_and_forwards.requests_allow_list.app.get_url"
+    )
+    def new_get_path():
+        return TaintedStr(original_function())
+
+    @tm.patch.function(
+        "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_relative_paths.app.get_path"
+    )
+    def new_get_path():
+        return TaintedStr(original_function())
+
+    @tm.patch.function(
+        "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app.get_url"
+    )
+    def new_get_path():
+        return TaintedStr(original_function())
+
+    @tm.patch.function(
+        "dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_deny_list_urls.app.get_url"
+    )
+    def new_get_path():
+        return TaintedStr(original_function())
+
+    @tm.patch.function(
+        "dataset.cwe_938_unvalidated_redirects_and_forwards.yarl_allow_list_relative_paths.app.get_path"
+    )
+    def new_get_path():
+        return TaintedStr(original_function())
+
+    @tm.patch.function(
+        "dataset.cwe_938_unvalidated_redirects_and_forwards.yarl_allow_list_urls.app.get_url"
+    )
+    def new_get_path():
+        return TaintedStr(original_function())
+
+    @tm.patch.function(
+        "dataset.cwe_938_unvalidated_redirects_and_forwards.yarl_deny_list_urls.app.get_url"
+    )
+    def new_get_path():
+        return TaintedStr(original_function())
+
+    return tm
+
+
+# Test & Fuzzer for Furl Allow List Relative Paths
+def test_fuzz_furl_path(taintmonkey):
+    from dataset.cwe_938_unvalidated_redirects_and_forwards.furl_allow_list_relative_paths.app import (
+        app,
+    )
+
+    taintmonkey.set_app(app)
+
+    client = taintmonkey.get_client()
+
+    fuzzer = taintmonkey.get_fuzzer()
+    with fuzzer.get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/unvalidated_redirect?{urlencode({'path': data})}")
+
+
+# Test & Fuzzer for Furl Allow List Urls
+def test_fuzz_furl_allow(taintmonkey):
+    from dataset.cwe_938_unvalidated_redirects_and_forwards.furl_allow_list_urls.app import (
+        app,
+    )
+
+    taintmonkey.set_app(app)
+
+    client = taintmonkey.get_client()
+
+    fuzzer = taintmonkey.get_fuzzer()
+    with fuzzer.get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/unvalidated_redirect?{urlencode({'url': data})}")
+
+
+# Test & Fuzzer for Furl Deny List Urls
+def test_fuzz_furl_deny(taintmonkey):
+    from dataset.cwe_938_unvalidated_redirects_and_forwards.furl_deny_list_urls.app import (
+        app,
+    )
+
+    taintmonkey.set_app(app)
+
+    client = taintmonkey.get_client()
+
+    fuzzer = taintmonkey.get_fuzzer()
+    with fuzzer.get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/unvalidated_redirect?{urlencode({'url': data})}")
+
+
+# Test & Fuzzer for Requests Allow List Urls
+def test_fuzz_requests_allow(taintmonkey):
+    from dataset.cwe_938_unvalidated_redirects_and_forwards.requests_allow_list.app import (
+        app,
+    )
+
+    taintmonkey.set_app(app)
+
+    client = taintmonkey.get_client()
+
+    fuzzer = taintmonkey.get_fuzzer()
+    with fuzzer.get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/unvalidated_redirect?{urlencode({'url': data})}")
+
+
+# Test & Fuzzer for Urllib Allow List Relative Paths
+def test_fuzz_urllib_path(taintmonkey):
+    from dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_relative_paths.app import (
+        app,
+    )
+
+    taintmonkey.set_app(app)
+
+    client = taintmonkey.get_client()
+
+    fuzzer = taintmonkey.get_fuzzer()
+    with fuzzer.get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/unvalidated_redirect?{urlencode({'path': data})}")
+
+
+# Test & Fuzzer for Urllib Allow List Urls
+def test_fuzz_urllib_allow(taintmonkey):
     from dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_allow_list_urls.app import (
         app,
     )
 
-    register_taint_client(app)
-    yield app
+    taintmonkey.set_app(app)
+
+    client = taintmonkey.get_client()
+
+    fuzzer = taintmonkey.get_fuzzer()
+    with fuzzer.get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/unvalidated_redirect?{urlencode({'url': data})}")
 
 
-@pytest.fixture()
-def client(app):
-    return app.test_client()
-
-
-@pytest.fixture()
-def fuzzer(app):
-    # Corpus from https://hacktricks.boitatech.com.br/pentesting-web/open-redirect
-    return DictionaryFuzzer(
-        app, "plugins/cwe_938_unvalidated_redirects_and_forwards/corpus.txt"
+# Test & Fuzzer for Urllib Deny List Urls
+def test_fuzz_urllib_deny(taintmonkey):
+    from dataset.cwe_938_unvalidated_redirects_and_forwards.urllib_deny_list_urls.app import (
+        app,
     )
 
+    taintmonkey.set_app(app)
 
-def test_taint_exception(client):
-    with pytest.raises(TaintException):
-        client.get("/unvalidated_redirect?url=https://www.malicious.com/evil")
+    client = taintmonkey.get_client()
+
+    fuzzer = taintmonkey.get_fuzzer()
+    with fuzzer.get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/unvalidated_redirect?{urlencode({'url': data})}")
 
 
-def test_no_taint_exception(client):
-    # Expect no exception
-    client.get("/validated_redirect?url=https://www.allowed.com/safe")
+# Test & Fuzzer for Yarl Allow List Relative Paths
+def test_fuzz_yarl_path(taintmonkey):
+    from dataset.cwe_938_unvalidated_redirects_and_forwards.yarl_allow_list_relative_paths.app import (
+        app,
+    )
+
+    taintmonkey.set_app(app)
+
+    client = taintmonkey.get_client()
+
+    fuzzer = taintmonkey.get_fuzzer()
+    with fuzzer.get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/unvalidated_redirect?{urlencode({'path': data})}")
 
 
-def test_fuzz(fuzzer):
+# Test & Fuzzer for Yarl Allow List Urls
+def test_fuzz_yarl_allow(taintmonkey):
+    from dataset.cwe_938_unvalidated_redirects_and_forwards.yarl_allow_list_urls.app import (
+        app,
+    )
+
+    taintmonkey.set_app(app)
+
+    client = taintmonkey.get_client()
+
+    fuzzer = taintmonkey.get_fuzzer()
+    with fuzzer.get_context() as (client, get_input):
+        for data in get_input():
+            with pytest.raises(TaintException):
+                client.get(f"/unvalidated_redirect?{urlencode({'url': data})}")
+
+
+# Test & Fuzzer for Yarl Deny List Urls
+def test_fuzz_yarl_deny(taintmonkey):
+    from dataset.cwe_938_unvalidated_redirects_and_forwards.yarl_deny_list_urls.app import (
+        app,
+    )
+
+    taintmonkey.set_app(app)
+
+    client = taintmonkey.get_client()
+
+    fuzzer = taintmonkey.get_fuzzer()
     with fuzzer.get_context() as (client, get_input):
         for data in get_input():
             with pytest.raises(TaintException):
