@@ -1,10 +1,16 @@
 import os
 from flask import Flask, request, abort, send_file
+from taintmonkey.taint import TaintedStr
+from taintmonkey import TaintException
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "uploads/"
 
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+
+
+def safe_wrapper(file_path):
+    return send_file(file_path)
 
 
 def allowed_file(filename):
@@ -21,12 +27,10 @@ def insecure_download():
     if not filename:
         return "no file", 400
 
-    file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+    filename = TaintedStr(filename)
+    file_path = TaintedStr(os.path.join(app.config["UPLOAD_FOLDER"], filename))
 
-    if not os.path.isfile(file_path):
-        return "file not found", 404
-
-    return send_file(file_path)
+    return safe_wrapper(file_path)
 
 
 @app.post("/secure/download")
@@ -43,7 +47,7 @@ def secure_download():
     if not os.path.isfile(file_path):
         return "file not found", 404
 
-    return send_file(file_path)
+    return safe_wrapper(file_path)
 
 
 if __name__ == "__main__":
