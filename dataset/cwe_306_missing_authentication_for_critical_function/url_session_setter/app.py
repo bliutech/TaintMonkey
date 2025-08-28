@@ -10,6 +10,10 @@ users = {
 }
 
 
+def set_session_username(username):
+    session["username"] = username
+
+
 @app.get("/insecure/login")
 def insecure_login_show():
     return """
@@ -26,18 +30,18 @@ def insecure_login_show():
     """
 
 
+# This isn't actually insecure, it just uses a weird URL to set the session, which then has no checks
 @app.post("/insecure/login")
 def insecure_login_send():
     username = request.form.get("username")
+
     password = request.form.get("password")
+
     if username is None or password is None:
         return "Error - no username or no password"
 
-    db_password = users.get(username)
-    if db_password is None:
-        return "Error, user not in database"
-
-    if db_password != password:
+    # Verifier
+    if not user_login_info_correct(username, password):
         return "Invalid credentials"
 
     redirect_string = f"/set_session?user={username}"
@@ -51,7 +55,9 @@ def insecure_set_session():
     if username is None:
         return "Error, user not in request"
 
-    session["username"] = username
+    # Sink
+    set_session_username(username)
+
     return f"User logged in as: {username}"
 
 
@@ -71,23 +77,28 @@ def secure_login_show():
     """
 
 
+# Verifier
+def user_login_info_correct(username, password):
+    return username in users and users[username] == password
+
+
 @app.post("/secure/login")
 def secure_login_send():
     username = request.form.get("username")
+
     password = request.form.get("password")
 
     if username is None or password is None:
         return "Weird, this shouldn't happen"
 
-    if user_login_info_correct(username, password, users):
-        session["username"] = username
-        return f"Welcome, {username}!"
-    return "Invalid credentials"
+    # Verifier
+    if not user_login_info_correct(username, password):
+        return "Invalid credentials"
 
+    # Sink
+    set_session_username(username)
 
-# Monkey patch?
-def user_login_info_correct(username, password, database):
-    return username in database and username[username] == password
+    return f"User logged in as: {username}"
 
 
 @app.post("/logout")

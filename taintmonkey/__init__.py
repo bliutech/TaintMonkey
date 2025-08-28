@@ -5,10 +5,32 @@ Utility data structures and methods for TaintMonkey.
 from flask import Flask
 from flask.testing import FlaskClient
 
+import taintmonkey.patch
 from taintmonkey.client import register_taint_client
 from taintmonkey.fuzzer import Fuzzer
-from taintmonkey.patch import patch_function, original_function, MonkeyPatch
+from taintmonkey.patch import MonkeyPatch
 from taintmonkey.taint import TaintedStr
+
+
+# Set patch_function
+patch_function = MonkeyPatch.function
+
+
+# Set original function
+original_function = MonkeyPatch.original_function
+
+# Monkey patch function that calls after every unit test so that it forces the deleting of TaintMonkey objects
+import _pytest.python
+
+old_setup = _pytest.python.Function.setup
+
+
+def new_setup(self) -> None:
+    MonkeyPatch.reset_cache()
+    return old_setup(self)
+
+
+setattr(_pytest.python.Function, "setup", new_setup)
 
 
 class TaintException(Exception):
@@ -94,7 +116,7 @@ class TaintMonkey:
     def register_verifier(self, verifier: str):
         """
         Register a verifier to be used by TaintMonkey.
-        :param sanitizer: The path of the verifier to register.
+        :param verifier: The path of the verifier to register.
         """
         if verifier not in self._verifiers:
             self._verifiers.append(verifier)
@@ -139,5 +161,4 @@ class TaintMonkey:
                     # If it is, check if its tainted
                     if value.is_tainted():
                         raise TaintException()
-
             return original_function(*args, **kwargs)

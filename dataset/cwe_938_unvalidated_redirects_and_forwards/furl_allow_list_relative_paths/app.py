@@ -11,7 +11,7 @@ def unvalidated_redirect():
     redirect_url = get_path()
     if not redirect_url:
         return "No URL provided", 400
-    return redirect(redirect_url)
+    redirect_to(redirect_url)
 
 
 @app.route("/validated_redirect", methods=["GET"])
@@ -21,7 +21,7 @@ def validated_redirect():
         return "No URL provided", 400
 
     if check_allow_path(redirect_url):
-        return redirect(redirect_url)
+        redirect_to(redirect_url)
 
     return "Invalid redirect URL", 400
 
@@ -39,6 +39,10 @@ def check_allow_path(path):
         and (parsed_url.host == "" or parsed_url.host == None)
         and str(parsed_url.path) in ALLOW_RELATIVE_PATHS
     )
+
+
+def redirect_to(path):
+    return redirect(path)
 
 
 if __name__ == "__main__":

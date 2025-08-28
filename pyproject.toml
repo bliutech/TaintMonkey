@@ -32,9 +32,6 @@ dependencies = {file = ["requirements.txt"]}
 [tool.setuptools.packages.find]
 include = ["taintmonkey", "taintmonkey.*"]
 
-[project.optional-dependencies]
-dev = ["pytest"]
-
 [project.urls]
 Homepage = "https://github.com/bliutech/taintmonkey" 
 

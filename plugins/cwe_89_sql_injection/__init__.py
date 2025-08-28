@@ -24,11 +24,11 @@ import sys
 
 # Define sources, sanitizers, and sinks
 VERIFIERS = [
-    "dataset.secure_alphamumeric_signup.app.pattern_match"
-    "dataset.secure_alphanumeric_login.app.pattern_match"
-    "dataset.secure_login.app.sanitize_input"
-    "dataset.secure_second_layer.app.sanitize_query"
-    "dataset.secure_signup.app.sanitize_input"
+    "dataset.secure_alphamumeric_signup.app.pattern_match",
+    "dataset.secure_alphanumeric_login.app.pattern_match",
+    "dataset.secure_login.app.sanitize_input",
+    "dataset.secure_second_layer.app.sanitize_query",
+    "dataset.secure_signup.app.sanitize_input",
 ]
 SANITIZERS = []
 SINKS = []
@@ -42,7 +42,6 @@ from sqlalchemy.orm._typing import OrmExecuteOptionsParameter
 from sqlalchemy import util
 from sqlalchemy.orm.session import _BindArguments
 from sqlalchemy.engine import Result
-
 
 old_session_execute = sqlalchemy.orm.session.Session.execute
 
@@ -112,95 +111,104 @@ def taintmonkey():
 
     return tm
 
-    def test_fuzz_insecure_alphanumeric_login(taintmonkey):
-        from dataset.cwe_89_sql_injection.insecure_alphanumeric_login.app import app
+def test_fuzz_insecure_alphanumeric_login(taintmonkey):
+    from dataset.cwe_89_sql_injection.insecure_alphanumeric_login.app import app
 
-        taintmonkey.set_app(app)
+    taintmonkey.set_app(app)
 
-        with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-            for data in get_input():
-                client.get(f"/secure?{urlencode({'file': data})}")
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
 
-    def test_fuzz_secure_alphanumeric_login(taintmonkey):
-        from dataset.cwe_89_sql_injection.secure_alphanumeric_login.app import app
 
-        taintmonkey.set_app(app)
+def test_fuzz_secure_alphanumeric_login(taintmonkey):
+    from dataset.cwe_89_sql_injection.secure_alphanumeric_login.app import app
 
-        with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-            for data in get_input():
-                client.get(f"/secure?{urlencode({'file': data})}")
+    taintmonkey.set_app(app)
 
-    def test_fuzz_insecure_alphanumeric_signup(taintmonkey):
-        from dataset.cwe_89_sql_injection.insecure_alphanumeric_signup.app import app
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
 
-        taintmonkey.set_app(app)
 
-        with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-            for data in get_input():
-                client.get(f"/secure?{urlencode({'file': data})}")
+def test_fuzz_insecure_alphanumeric_signup(taintmonkey):
+    from dataset.cwe_89_sql_injection.insecure_alphanumeric_signup.app import app
 
-    def test_fuzz_secure_alphanumeric_signup(taintmonkey):
-        from dataset.cwe_89_sql_injection.secure_alphanumeric_signup.app import app
+    taintmonkey.set_app(app)
 
-        taintmonkey.set_app(app)
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
 
-        with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-            for data in get_input():
-                client.get(f"/secure?{urlencode({'file': data})}")
 
-    def test_fuzz_insecure_login(taintmonkey):
-        from dataset.cwe_89_sql_injection.insecure_login.app import app
+def test_fuzz_secure_alphanumeric_signup(taintmonkey):
+    from dataset.cwe_89_sql_injection.secure_alphanumeric_signup.app import app
 
-        taintmonkey.set_app(app)
+    taintmonkey.set_app(app)
 
-        with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-            for data in get_input():
-                client.get(f"/secure?{urlencode({'file': data})}")
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
 
-    def test_fuzz_secure_login(taintmonkey):
-        from dataset.cwe_89_sql_injection.secure_login.app import app
 
-        taintmonkey.set_app(app)
+def test_fuzz_insecure_login(taintmonkey):
+    from dataset.cwe_89_sql_injection.insecure_login.app import app
 
-        with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-            for data in get_input():
-                client.get(f"/secure?{urlencode({'file': data})}")
+    taintmonkey.set_app(app)
 
-    def test_fuzz_insecure_signup(taintmonkey):
-        from dataset.cwe_89_sql_injection.insecure_signup.app import app
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
 
-        taintmonkey.set_app(app)
 
-        with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-            for data in get_input():
-                client.get(f"/secure?{urlencode({'file': data})}")
+def test_fuzz_secure_login(taintmonkey):
+    from dataset.cwe_89_sql_injection.secure_login.app import app
 
-    def test_fuzz_secure_signup(taintmonkey):
-        from dataset.cwe_89_sql_injection.secure_signup.app import app
+    taintmonkey.set_app(app)
 
-        taintmonkey.set_app(app)
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
 
-        with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-            for data in get_input():
-                client.get(f"/secure?{urlencode({'file': data})}")
 
-    def test_fuzz_insecure_second_layer(taintmonkey):
-        from dataset.cwe_89_sql_injection.insecure_second_layer.app import app
+def test_fuzz_insecure_signup(taintmonkey):
+    from dataset.cwe_89_sql_injection.insecure_signup.app import app
 
-        taintmonkey.set_app(app)
+    taintmonkey.set_app(app)
 
-        with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-            for data in get_input():
-                client.get(f"/secure?{urlencode({'file': data})}")
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
 
-    def test_fuzz_secure_second_layer(taintmonkey):
-        from dataset.cwe_89_sql_injection.secure_second_layer.app import app
 
-        taintmonkey.set_app(app)
+def test_fuzz_secure_signup(taintmonkey):
+    from dataset.cwe_89_sql_injection.secure_signup.app import app
 
-        with taintmonkey.get_fuzzer().get_context() as (client, get_input):
-            for data in get_input():
-                client.get(f"/secure?{urlencode({'file': data})}")
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
+
+
+def test_fuzz_insecure_second_layer(taintmonkey):
+    from dataset.cwe_89_sql_injection.insecure_second_layer.app import app
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
+
+
+def test_fuzz_secure_second_layer(taintmonkey):
+    from dataset.cwe_89_sql_injection.secure_second_layer.app import app
+
+    taintmonkey.set_app(app)
+
+    with taintmonkey.get_fuzzer().get_context() as (client, get_input):
+        for data in get_input():
+            client.get(f"/secure?{urlencode({'file': data})}")
 
 
 if __name__ == "__main__":

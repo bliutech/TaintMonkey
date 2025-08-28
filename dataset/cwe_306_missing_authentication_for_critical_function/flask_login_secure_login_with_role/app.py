@@ -43,29 +43,15 @@ def load_user(user_id):
     return None
 
 
-# Source
-def get_username(this_request):
-    return this_request.form.get("username")
-
-
-# Source
-def get_role(this_request):
-    return this_request.form.get("role")
-
-
-# Sanitizer - wanted to do this so that I can taint both username and role (two tainted strings at once)
+# Verifier
 def check_credentials(given_username, given_role, given_password, user_db):
     user_info = user_db.get(given_username)
     if user_info is None:
         return False  # User not found
 
     db_role = user_info.get("role")
-    if db_role is None:
-        return False  # Role not found
 
     db_password = user_info.get("password")
-    if db_password is None:
-        return False  # Password not found
 
     if db_role != given_role or db_password != given_password:
         return False  # Wrong credentials
@@ -95,21 +81,24 @@ def secure_login_get():
 
 @app.post("/login")
 def secure_login_post():
-    username = get_username(request)
+    username = request.form.get("username")
     if username is None:
         return "This should not happen - no username"
-    role = get_role(request)
+
+    role = request.form.get("role")
     if role is None:
         return "This should not happen - no role"
+
     password = request.form.get("password")
     if password is None:
         return "This should not happen - no password"
 
+    # Verify
     if not check_credentials(username, role, password, users):
         return "Invalid credentials"
 
     user = User(username, role)  # Sink
-    login_user(user)  # Sink? This is where tainted objects could be helpful
+    login_user(user)
 
     return f"Welcome, {username}!"
 
@@ -123,7 +112,9 @@ def logout():
 @app.get("/current_user")
 @login_required
 def show_current_user():
-    return f"Currently {current_user.get_username()}"
+    return (
+        f"Currently {current_user.get_username()} with role {current_user.get_role()}"
+    )
 
 
 @app.get("/admin")
