@@ -3,17 +3,29 @@ TaintMonkey plugin for pytest.
 """
 
 import pygments
-from pygments.lexers import PythonLexer
-from pygments.formatters import TerminalFormatter
+from pygments.lexers.python import PythonLexer
+from pygments.formatters.terminal import TerminalFormatter
 
-import traceback
 import pytest
 
-from pytest import TestReport
+from _pytest._code.code import ReprEntry
 
 from taintmonkey import TaintException
 
-report_entry: TestReport | None = None
+tainted_repr_entries: list[ReprEntry | None] = []
+
+# Gives how far behind of error lines of code context should be given
+code_context = 10
+
+
+__all__ = ["set_code_context"]
+
+
+def set_code_context(new_code_context: int):
+    if isinstance(new_code_context, int):
+        global code_context
+
+        code_context = new_code_context
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -25,11 +37,11 @@ def pytest_runtest_makereport(item, call):
     if report.when == "call" and report.failed:
         excinfo = call.excinfo
         if excinfo and excinfo.errisinstance(TaintException):
-            global report_entry
+            global tainted_repr_entries
 
             # Hacky solution to suppress the traceback in terminal
-            if len(report.longrepr.reprtraceback.reprentries) > 1:
-                report_entry = report.longrepr.reprtraceback.reprentries[-2]
+            if len(report.longrepr.reprtraceback.reprentries) > 2:
+                report_entry = report.longrepr.reprtraceback.reprentries[-3]
 
                 report.longrepr.reprtraceback.reprentries = (
                     report.longrepr.reprtraceback.reprentries[-1:]
@@ -45,6 +57,8 @@ def pytest_runtest_makereport(item, call):
                 ].reprfileloc.lineno = report_entry.reprfileloc.lineno
             else:
                 report_entry = report.longrepr.reprtraceback.reprentries[-1]
+
+            tainted_repr_entries.append(report_entry)
 
 
 def get_taint_related_reports(terminalreporter):
@@ -99,7 +113,9 @@ def get_function_source_code(file_path, lineno):
     return source_code, lineno + 1
 
 
-def write_source_code_with_context(terminalreporter, report_entry, code_context):
+def write_source_code_with_context(terminalreporter, report_entry):
+    global code_context
+
     f_path = report_entry.reprfileloc.path
     lineno = report_entry.reprfileloc.lineno
     source_code, func_start = get_function_source_code(f_path, lineno)
@@ -126,31 +142,30 @@ def write_source_code_with_context(terminalreporter, report_entry, code_context)
     if len(report_entry.lines) > 1 and all(
         c == "^" for c in "".join(report_entry.lines[-1].split())
     ):
-        add_space = len(source_code[err_index]) - len(report_entry.lines[-2]) + 2
+        add_space = len(source_code[err_index]) - len(report_entry.lines[-2]) + adjust
         terminalreporter.write(add_space * " " + report_entry.lines[-1])
         terminalreporter.write_line(f" --> {taint_message}")
     else:
-        terminalreporter.write_line(f"^^^{taint_message}^^^")
+        terminalreporter.write_line(f"^^^ {taint_message} ^^^")
 
 
-def write_single_taint_report(terminalreporter, report, code_context):
+def write_single_taint_report(terminalreporter, report, report_number):
     terminalreporter.write_line(f"TEST: {report.nodeid}")
 
-    global report_entry
+    global tainted_repr_entries
 
-    if report_entry is None:
+    if not -1 < report_number < len(tainted_repr_entries):
         return
+
+    report_entry = tainted_repr_entries[report_number]
 
     terminalreporter.write_line(f"LOCATION: {report_entry.reprfileloc}")
 
     # Show code with context
-    write_source_code_with_context(terminalreporter, report_entry, code_context)
+    write_source_code_with_context(terminalreporter, report_entry)
 
 
 def pytest_terminal_summary(terminalreporter, exitstatus, config):
-    # Gives how far behind of error lines of code context should be given
-    code_context = 5
-
     # Check to see if the terminal writer exists
     if not hasattr(terminalreporter, "_tw"):
         return
@@ -165,8 +180,8 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     for i in range(len(tainted_reports)):
         report = tainted_reports[i]
 
-        write_single_taint_report(terminalreporter, report, code_context)
+        write_single_taint_report(terminalreporter, report, i)
 
-        # Add empty line if not last
+        # Add empty space if not last
         if i < len(tainted_reports) - 1:
             terminalreporter.write_line("\n")

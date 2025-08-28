@@ -8,7 +8,7 @@ app.config["SECRET_KEY"] = "supersecretkey"
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 587
 app.config["MAIL_USE_TLS"] = True
-app.config["MAIL_USERNAME"] = "your-email@gmail.com"  # Your email
+app.config["MAIL_USERNAME"] = "your-email@gmail.com"
 app.config["MAIL_PASSWORD"] = "your-app-password"
 mail = Mail(app)
 
@@ -19,11 +19,6 @@ users = {
 }
 
 
-# Source
-def get_email(this_request):
-    return this_request.form.get("email")
-
-
 # Sink
 def send_simple_email(recipient, subject, body):
     try:
@@ -31,7 +26,7 @@ def send_simple_email(recipient, subject, body):
             subject=subject, sender=app.config["MAIL_USERNAME"], recipients=[recipient]
         )
         msg.body = body
-        mail.send(msg)  # Sink? May be more robust to make this a sink
+        mail.send(msg)
         print(f"Email sent successfully to {recipient}")
     except Exception as e:
         print(f"Failed to send email: {e}")
@@ -54,11 +49,13 @@ def insecure_reset_passwrd_post():
     username = request.form.get("username")  # Also checks if user exists
     if username is None:
         return "This should not happen - no username"
-    email = get_email(request)  # Source
+
+    email = request.form.get("email")
     if email is None:
         return "This should not happen - no email"
 
-    send_simple_email(email, "Password Recovery", "IMAGINE RECOVERY CODE HERE")  # Sink?
+    # Sink
+    send_simple_email(email, "Password Recovery", "IMAGINE RECOVERY CODE HERE")
 
     return f"Email sent for {username}!"
 

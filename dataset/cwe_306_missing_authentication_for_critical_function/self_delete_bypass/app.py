@@ -5,19 +5,33 @@ app.secret_key = "secret"
 
 # Fake user database where key is username & value is password
 users = {
+    "admin": "admin123",
     "alice": "alice123",
+    "audrey": "audrey123",
+    "sebastian": "sebastian123",
 }
 
 
 @app.post("/login")
 def login_send():
-    username = request.form["username"]
-    password = request.form["password"]
+    username = request.form.get("username")
 
-    if username in users and users[username] == password:
+    password = request.form.get("password")
+
+    if username is None or password is None:
+        return "username or password not supplied in post form"
+
+    db_password = users.get(username)
+    if db_password and db_password == password:
         session["username"] = username
-        return f"Welcome, {username}!"
-    return "Invalid credentials"
+
+        return f"""
+            Welcome, {username}!
+        """
+
+    return """
+        Invalid credentials
+    """
 
 
 @app.get("/login")
@@ -41,12 +55,18 @@ def login_show():
 
 @app.post("/signup")
 def signup_send():
-    username = request.form["username"]
-    password = request.form["password"]
+    username = request.form.get("username")
+
+    password = request.form.get("password")
+
+    if username is None or password is None:
+        return "username or password not supplied in post form"
 
     if username in users:
         return "username already taken"
+
     users[username] = password
+
     return f"{username}, registered!"
 
 
@@ -70,42 +90,50 @@ def is_user_in_session(user_string, this_session):
     return user_string in this_session
 
 
-@app.delete("/insecure/delete_self")
+# Verifier
+def user_and_session_user_match(user, user_string, this_session):
+    session_user = this_session.get(user_string)
+
+    return user == session_user
+
+
+# Sink
+def delete_user(user_to_delete):
+    try:
+        users.pop(user_to_delete)
+        return f"User {user_to_delete} deleted"
+    except KeyError:
+        return f"User {user_to_delete} not found"
+
+
+@app.get("/insecure/delete_self")
 def insecure_delete_user():
     if not is_user_in_session("username", session):
         return redirect("/login")
 
     user_to_delete = request.args.get("user")
-    if not user_to_delete:
-        return "No URL parameter"
+    if user_to_delete is None:
+        return "no user given to delete"
 
-    # CWE-863: No check if current user is itself
-    return f"User {user_to_delete} deleted (pretend)"
+    # Sink
+    return delete_user(user_to_delete)
 
 
-@app.delete("/secure/delete_self")
+@app.get("/secure/delete_self")
 def secure_delete_user():
     if not is_user_in_session("username", session):
         return redirect("/login")
 
     user_to_delete = request.args.get("user")
-    if not user_to_delete:
-        return "No URL parameter"
+    if user_to_delete is None:
+        return "no user given to delete"
 
-    # CWE-863: Check if current user is itself
+    # Verifier
     if not user_and_session_user_match(user_to_delete, "username", session):
         return "Not allowed to delete someone other than self"
 
-    if user_to_delete in users:
-        return "this should not happen"
-    session.clear()
-    users.pop(user_to_delete)
-    return f"User {user_to_delete} deleted"
-
-
-# Monkey patch function
-def user_and_session_user_match(user, user_string, this_session):
-    return user == this_session[user_string]
+    # Sink
+    return delete_user(user_to_delete)
 
 
 @app.post("/logout")

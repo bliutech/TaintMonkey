@@ -8,18 +8,24 @@ users = {
     "alice": "alice123",
     "jeff": "jeff123",
 }
+
 # Fake token database
 tokens = dict()
 for user in users:
     tokens[user] = []
+
 tokens["alice"].append("you_found_this_secret!")
 tokens["jeff"].append("jeffy_cool_secret")
 
 
 @app.post("/login")
 def login_send():
-    username = request.form["username"]
-    password = request.form["password"]
+    username = request.form.get("username")
+
+    password = request.form.get("password")
+
+    if username is None or password is None:
+        return "username or password not supplied in post form"
 
     db_password = users.get(username)
     if db_password and db_password == password:
@@ -32,6 +38,7 @@ def login_send():
                 <button type="submit">To Home</button>
             </form>
         """
+
     return """
         Invalid credentials
             <br>
@@ -66,21 +73,24 @@ def login_show():
 @app.post("/home")
 def home_send():
     token = request.form.get("token")
-    if not token:
-        return "No token given"
+    if token is None:
+        return "no token supplied in post form"
+
     if not is_user_in_session("username", session):
         return "No user in session"
+
     username = session.get("username")
     if username in tokens:
         tokens[username].append(token)
     else:
         tokens[username] = [token]
+
     return f"""
-    Token {token} added to tokens!
-    <br>
-    <form action="/home" method="get">
-        <button type="submit">Back Home</button>
-    </form>
+        Token {token} added to tokens!
+        <br>
+        <form action="/home" method="get">
+            <button type="submit">Back Home</button>
+        </form>
     """
 
 
@@ -88,6 +98,7 @@ def home_send():
 def home_show():
     if not is_user_in_session("username", session):
         return redirect("/login")
+
     username = session.get("username")
     return f"""
         <h2>Home</h2>
@@ -118,11 +129,13 @@ def secret():
     username = session["username"]
 
     # This should never be true
-    if not user_taken(username, users):
+    if not username in users:
         return "this should not happen - user"
+
     user_tokens = tokens.get(username)
     if user_tokens is None:
         return "this should not happen - tokens"
+
     token_string = f"{username}'s secret tokens are:<br>"
     for token in user_tokens:
         token_string += f" {token}<br>"
@@ -131,22 +144,25 @@ def secret():
             <button type="submit">Back Home</button>
         </form>
     """
+
     return token_string
 
 
-# Monkey Patch
+# Sink
 def sign_up(username, password, user_database):
     user_database[username] = password
 
 
 @app.post("/insecure/signup")
 def insecure_signup_send():
-    username = get_username(request)
-    if not username:
-        return "No username given"
+    username = request.form.get("username")
+
     password = request.form.get("password")
-    if password is None:
-        return "No password given"
+
+    if username is None or password is None:
+        return "username or password not supplied in post form"
+
+    # Sink
     sign_up(username, password, users)
     return f"""
         {username}, you're registered!
@@ -172,27 +188,27 @@ def insecure_signup_get():
     """
 
 
-# Monkey Patch function
-def user_taken(user_given, database_given):
-    return user_given in database_given
+# Verifier
+def user_taken(user_given, password_given, database_given):
+    db_password = database_given.get(user_given)
 
+    if db_password == password_given:
+        print("user info already exists - user probably clicked wrong button")
 
-# Source
-def get_username(this_request):
-    return this_request.form.get("username")
+    return not db_password is None
 
 
 @app.post("/secure/signup")
 def secure_signup_send():
-    username = get_username(request)
-    if not username:
-        return "No username given"
-    password = request.form.get("password")
-    if password is None:
-        return "No password given"
+    username = request.form.get("username")
 
-    # Security check
-    if user_taken(username, users):
+    password = request.form.get("password")
+
+    if username is None or password is None:
+        return "username or password not supplied in post form"
+
+    # Verifier
+    if user_taken(username, password, users):
         return """
             Username already taken!
             <form action="/secure/signup" method="get">
@@ -200,6 +216,7 @@ def secure_signup_send():
             </form>
         """
 
+    # Sink
     sign_up(username, password, users)
     return f"""
         {username}, you're registered!

@@ -5,20 +5,28 @@ app.secret_key = "secret"
 
 # Fake user database
 users = {
-    "alice": {"password": "alice123", "token": "user"},
-    "admin": {"password": "admin123", "token": "admin"},
+    "alice": {"password": "alice123", "role": "user"},
+    "admin": {"password": "admin123", "role": "admin"},
 }
 
 
 @app.post("/login")
 def login_send():
-    username = request.form["username"]
-    password = request.form["password"]
+    username = request.form.get("username")
+    password = request.form.get("password")
 
-    user = users.get(username)
-    if user and user["password"] == password:
+    if username is None or password is None:
+        return "username or password not set in request"
+
+    user_info = users.get(username)
+    if user_info and user_info["password"] == password:
         session["username"] = username
-        session["role"] = user["role"]
+
+        role = user_info.get("role")
+        if role is None:
+            return "role not found in user info"
+        session["role"] = role
+
         return f"Welcome, {username}!"
     return "Invalid credentials"
 
@@ -39,38 +47,45 @@ def login_show():
     """
 
 
+# Bad verifier, shows how it can be misleading (checks must be correct)
 def is_user_in_session(user_string, this_session):
     return user_string in this_session
 
 
-@app.delete("/insecure/admin/delete_user")
+# Sink
+def delete_user(user_to_delete):
+    return f"User {user_to_delete} deleted (pretend)"
+
+
+@app.get("/insecure/admin/delete_user")
 def insecure_delete_user():
     if not is_user_in_session("username", session):
         return redirect("/login")
 
     user_to_delete = request.args.get("user")
-    # CWE-863: No check if current user is admin
-    return f"User {user_to_delete} deleted (pretend)"
+    if user_to_delete is None:
+        return "no user given to delete"
+
+    # No check if current user is admin
+    return delete_user(user_to_delete)
 
 
-# Checks to see if a user is authorized as an admin
+# Verifier
 def is_admin(this_session, role_string, admin_string):
     return role_string in this_session and this_session.get(role_string) == admin_string
 
 
-@app.delete("/secure/admin/delete_user")
+@app.get("/secure/admin/delete_user")
 def secure_delete_user():
     # Here we check to make sure that the logged-in user is admin
     if not is_admin(session, "role", "admin"):
         return redirect("/login")
 
     user_to_delete = request.args.get("user")
-    if not user_to_delete:
-        return "No user provided to delete"
-    user_deleted = users.get(user_to_delete)
-    if not user_deleted:
-        return "No user found"
-    return f"User {user_to_delete} deleted (pretend)"
+    if user_to_delete is None:
+        return "no user provided to delete"
+
+    return delete_user(user_to_delete)
 
 
 @app.post("/logout")
