@@ -111,6 +111,7 @@ def taintmonkey():
 
     return tm
 
+
 def test_fuzz_insecure_alphanumeric_login(taintmonkey):
     from dataset.cwe_89_sql_injection.insecure_alphanumeric_login.app import app
 
