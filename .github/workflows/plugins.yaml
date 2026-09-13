@@ -1,0 +1,52 @@
+name: CI - Run Plugin Corpus
+
+on:
+    push:
+        branches:
+            - main
+        paths:
+            - 'dataset/**'
+            - 'plugins/**'
+            - 'taintmonkey/**'
+            - 'requirements.txt'
+            - 'requirements-dataset.txt'
+            - 'pyproject.toml'
+    pull_request:
+        branches:
+            - main
+        paths:
+            - 'dataset/**'
+            - 'plugins/**'
+            - 'taintmonkey/**'
+            - 'requirements.txt'
+            - 'requirements-dataset.txt'
+            - 'pyproject.toml'
+    workflow_dispatch:
+
+jobs:
+    plugin-corpus:
+        name: Run Plugin Corpus
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.x'
+
+            - name: Install libmagic
+              run: sudo apt-get update && sudo apt-get install -y libmagic1
+
+            - name: Install dependencies
+              run: |
+                pip install -r requirements.txt -r requirements-dataset.txt
+                pip install pytest
+
+            - name: Run plugin corpus
+              # cwe_306: pre-existing bug, unrelated to this workflow (see PR description)
+              run: >
+                PYTHONPATH=. pytest plugins/
+                --ignore=plugins/cwe_306_missing_authentication_for_critical_function

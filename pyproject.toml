@@ -37,3 +37,7 @@ Homepage = "https://github.com/bliutech/taintmonkey"
 
 [project.entry-points.pytest11]
 taintmonkey = "taintmonkey.plugin"
+
+[tool.pytest.ini_options]
+# Plugins live in __init__.py, not test_*.py, so pytest needs this to collect them.
+python_files = ["test_*.py", "*_test.py", "__init__.py"]

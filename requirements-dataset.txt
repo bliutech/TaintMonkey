@@ -1,0 +1,17 @@
+# Third-party deps for dataset/ and plugins/, on top of requirements.txt:
+#   pip install -r requirements.txt -r requirements-dataset.txt
+# python-magic also needs the libmagic system library (see README).
+bleach==6.4.0
+Faker==40.38.0
+Flask-Login==0.6.3
+Flask-Mail==0.10.0
+Flask-SeaSurf==2.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-WTF==1.3.0
+furl==2.1.4
+html-sanitizer==2.6.0
+lxml==6.1.3
+python-magic==0.4.27
+requests==2.34.2
+SQLAlchemy==2.0.52
+yarl==1.24.5

@@ -9,9 +9,9 @@ ALLOWED_OPERATIONS = {
     "multiply": lambda x, y: x * y,
     "divide": lambda x, y: x / y if y != 0 else "Error: Division by zero",
     "power": lambda x, y: x**y,
-    "square_root": lambda x: x**0.5
-    if x >= 0
-    else "Error: Cannot take square root of negative number",
+    "square_root": lambda x: (
+        x**0.5 if x >= 0 else "Error: Cannot take square root of negative number"
+    ),
 }
 
 
